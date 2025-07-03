@@ -3,12 +3,11 @@ const Job = require('../models/Job');
 const pdfParse = require('pdf-parse');
 const fs = require('fs').promises;
 const path = require('path');
-const { analyzeResume } = require('../services/aiService');
 const { processApplicationScore, analyzeSkillsGap } = require('../services/autoQualificationService');
-
 const Quiz = require('../models/Quiz');
-const { generateQuizQuestions } = require('../services/aiService');
 const { sendApplicationEmail } = require('../services/emailService');
+
+const { analyzeResume, generateQuizQuestions } = require('../services/aiService'); // Correctly imported
 
 // @desc    Apply for a job
 // @route   POST /api/applications
