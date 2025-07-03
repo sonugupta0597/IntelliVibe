@@ -13,86 +13,190 @@ const { sendApplicationEmail } = require('../services/emailService');
 // @desc    Apply for a job
 // @route   POST /api/applications
 // @access  Private/Candidate
-// exports.applyForJob = async (req, res) => {
-//     const { jobId } = req.body;
-    
-//     if (!req.file) {
-//         return res.status(400).json({ message: 'Resume file is required' });
-//     }
+exports.applyForJob = async (req, res) => {
+    const { jobId } = req.body;
 
-//     try {
-//         const existingApplication = await Application.findOne({ job: jobId, candidate: req.user._id });
-//         if (existingApplication) {
-//             return res.status(400).json({ message: 'You have already applied for this job' });
-//         }
+    // Check for missing jobId
+    if (!jobId) {
+        return res.status(400).json({ message: 'jobId is required' });
+    }
 
-//         const application = new Application({
-//             job: jobId,
-//             candidate: req.user._id,
-//             resumeUrl: req.file.path.replace(/\\/g, '/'), // Normalize path for cross-platform
-//         });
+    // Validate jobId format
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+        return res.status(400).json({ message: 'Invalid jobId format' });
+    }
 
-//         const createdApplication = await application.save();
+    // Check for resume file
+    if (!req.file) {
+        return res.status(400).json({ message: 'Resume file is required' });
+    }
 
-//         // Perform AI analysis asynchronously
-//         (async () => {
-//             try {
-//                 // Get the job details for AI analysis
-//                 const job = await Job.findById(jobId);
-//                 if (!job) return;
+    // Check for PDF file type
+    if (!req.file.mimetype || req.file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ message: 'Only PDF resume files are accepted' });
+    }
 
-//                 // Read and parse the PDF
-//                 const pdfPath = path.join(__dirname, '..', req.file.path);
-//                 const dataBuffer = await fs.readFile(pdfPath);
-//                 const pdfData = await pdfParse(dataBuffer);
-//                 const resumeText = pdfData.text;
+    try {
+        // Check if already applied
+        const existingApplication = await Application.findOne({ job: jobId, candidate: req.user._id });
+        if (existingApplication) {
+            return res.status(400).json({ message: 'You have already applied for this job', applicationId: existingApplication._id, status: existingApplication.status });
+        }
 
-//                 // Analyze with AI
-//                 const aiAnalysis = await analyzeResume(resumeText, {
-//                     title: job.title,
-//                     companyName: job.companyName,
-//                     skills: job.skills,
-//                     description: job.description,
-//                     experienceLevel: job.experienceLevel,
-//                     jobType: job.jobType,
-//                     location: job.location,
-//                 });
+        // Get job details
+        const job = await Job.findById(jobId);
+        if (!job) {
+            return res.status(404).json({ message: 'Job not found' });
+        }
 
-//                 // Extract skills from resume (basic extraction - can be improved)
-//                 const resumeSkills = extractSkillsFromResume(resumeText, job.skills);
-                
-//                 // Analyze skills gap
-//                 const skillsGap = analyzeSkillsGap(resumeSkills, job.skills);
+        // Create application
+        const application = new Application({
+            job: jobId,
+            candidate: req.user._id,
+            resumeUrl: req.file.path.replace(/\\/g, '/'),
+            screeningStage: 'resume_uploaded',
+            stageHistory: [{
+                stage: 'resume_uploaded',
+                timestamp: new Date(),
+                status: 'completed'
+            }]
+        });
+        await application.save();
 
-//                 // Update the application with AI results
-//                 const updatedApplication = await Application.findByIdAndUpdate(
-//                     createdApplication._id, 
-//                     {
-//                         aiMatchScore: aiAnalysis.matchScore,
-//                         aiJustification: aiAnalysis.justification,
-//                         aiAnalysisDate: new Date(),
-//                         skillsGapAnalysis: skillsGap,
-//                     },
-//                     { new: true }
-//                 );
+        // Perform AI analysis asynchronously but wait for result
+        try {
+            // Parse PDF
+            const pdfPath = path.join(__dirname, '..', req.file.path);
+            const dataBuffer = await fs.readFile(pdfPath);
+            const pdfData = await pdfParse(dataBuffer);
+            const resumeText = pdfData.text;
 
-//                 // Process auto-qualification
-//                 await processApplicationScore(updatedApplication);
+            // Analyze with AI
+            const aiAnalysis = await analyzeResume(resumeText, {
+                title: job.title,
+                company: job.companyName,
+                skills: job.skills,
+                description: job.description,
+                experienceLevel: job.experienceLevel,
+                jobType: job.jobType,
+                location: job.location,
+            });
 
-//             } catch (aiError) {
-//                 console.error('AI analysis error for application:', createdApplication._id, aiError);
-//             }
-//         })();
+            console.log(" aiAnalysis ", aiAnalysis);
+            // Update application with AI results
+            application.aiMatchScore = aiAnalysis.matchScore;
+            application.aiJustification = aiAnalysis.justification;
+            application.aiAnalysisDate = new Date();
 
-//         res.status(201).json({
-//             message: 'Application submitted successfully! You will receive an email notification about your application status.',
-//             application: createdApplication,
-//         });
+            // Determine next stage based on score
+            const RESUME_THRESHOLD_FOR_QUIZ = 60; // Example threshold
+            if (aiAnalysis.matchScore >= RESUME_THRESHOLD_FOR_QUIZ) {
+                // Qualify for quiz
+                application.screeningStage = 'quiz_pending';
+                application.status = 'shortlisted';
+                application.stageHistory.push({
+                    stage: 'resume_screening',
+                    timestamp: new Date(),
+                    status: 'passed',
+                    score: aiAnalysis.matchScore,
+                    notes: 'Qualified for skills assessment'
+                });
 
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server Error', error: error.message });
-//     }
-// };
+                // Generate quiz if it doesn't exist for this job
+                let quiz = await Quiz.findOne({ job: jobId });
+                if (!quiz) {
+                    const questions = await generateQuizQuestions({
+                        title: job.title,
+                        skills: job.skills,
+                        description: job.description,
+                    });
+                    quiz = new Quiz({
+                        job: jobId,
+                        questions: questions,
+                        passingScore: 70, // Example passing score
+                        timeLimit: 30 // 30 minutes
+                    });
+                    await quiz.save();
+                }
+
+                // Send quiz invitation email
+                await sendApplicationEmail(application, 'quiz_invitation', {
+                    quizUrl: `${process.env.FRONTEND_URL}/candidate/quiz/${application._id}`,
+                    timeLimit: quiz.timeLimit,
+                    numberOfQuestions: quiz.questions.length
+                });
+
+                await application.save();
+
+                return res.status(201).json({
+                    success: true,
+                    message: 'Congratulations! Your application has been submitted and you qualify for the next stage.',
+                    application: {
+                        _id: application._id,
+                        status: application.status,
+                        aiMatchScore: application.aiMatchScore,
+                        screeningStage: application.screeningStage,
+                        nextStep: {
+                            stage: 'quiz',
+                            message: 'Please check your email for the skills assessment quiz invitation.',
+                            quizAvailable: true
+                        }
+                    }
+                });
+            } else {
+                // Not qualified - reject with feedback
+                application.screeningStage = 'resume_rejected';
+                application.status = 'rejected';
+                application.stageHistory.push({
+                    stage: 'resume_screening',
+                    timestamp: new Date(),
+                    status: 'failed',
+                    score: aiAnalysis.matchScore,
+                    notes: 'Did not meet minimum requirements'
+                });
+                await application.save();
+
+                // Send rejection email with feedback
+                await sendApplicationEmail(application, 'resume_rejected', {
+                    score: aiAnalysis.matchScore,
+                    feedback: aiAnalysis.justification,
+                    threshold: RESUME_THRESHOLD_FOR_QUIZ
+                });
+
+                return res.status(201).json({
+                    success: false,
+                    message: 'Thank you for your application. Unfortunately, your profile does not match the current requirements for this position.',
+                    application: {
+                        _id: application._id,
+                        status: application.status,
+                        aiMatchScore: application.aiMatchScore,
+                        feedback: aiAnalysis.justification,
+                        suggestions: 'Consider gaining more experience in the required skills and reapplying in the future.'
+                    }
+                });
+            }
+        } catch (aiError) {
+            console.error('AI analysis error:', aiError);
+            // If AI fails, still save the application but mark for manual review
+            application.screeningStage = 'manual_review_needed';
+            application.status = 'pending';
+            await application.save();
+
+            return res.status(201).json({
+                success: true,
+                message: 'Application submitted. It will be reviewed by our team.',
+                application: {
+                    _id: application._id,
+                    status: application.status,
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error in job application:', error);
+        return res.status(500).json({ message: 'Error submitting application', error: error.message });
+    }
+};
 
 // Helper function to extract skills from resume
 function extractSkillsFromResume(resumeText, jobSkills) {
@@ -337,195 +441,6 @@ exports.getMyCandidateApplications = async (req, res) => {
 // Configuration - these could be environment variables
 const RESUME_THRESHOLD_FOR_QUIZ = 60; // Minimum score to proceed to quiz
 const QUIZ_PASSING_SCORE = 70; // Minimum quiz score to proceed to video
-
-// @desc    Apply for a job with enhanced AI screening
-// @route   POST /api/applications
-// @access  Private/Candidate
-exports.applyForJob = async (req, res) => {
-    const { jobId } = req.body;
-    
-    if (!req.file) {
-        return res.status(400).json({ message: 'Resume file is required' });
-    }
-
-    try {
-        // Check if already applied
-        const existingApplication = await Application.findOne({ 
-            job: jobId, 
-            candidate: req.user._id 
-        });
-        
-        if (existingApplication) {
-            return res.status(400).json({ 
-                message: 'You have already applied for this job',
-                applicationId: existingApplication._id,
-                status: existingApplication.status
-            });
-        }
-
-        // Get job details
-        const job = await Job.findById(jobId);
-        if (!job) {
-            return res.status(404).json({ message: 'Job not found' });
-        }
-
-        // Create application
-        const application = new Application({
-            job: jobId,
-            candidate: req.user._id,
-            resumeUrl: req.file.path.replace(/\\/g, '/'),
-            screeningStage: 'resume_uploaded',
-            stageHistory: [{
-                stage: 'resume_uploaded',
-                timestamp: new Date(),
-                status: 'completed'
-            }]
-        });
-
-        await application.save();
-
-        // Perform AI analysis asynchronously but wait for result
-        try {
-            // Parse PDF
-            const pdfPath = path.join(__dirname, '..', req.file.path);
-            const dataBuffer = await fs.readFile(pdfPath);
-            const pdfData = await pdfParse(dataBuffer);
-            const resumeText = pdfData.text;
-
-            console.log("resumeText", resumeText);
-            
-            // Analyze with AI
-            const aiAnalysis = await analyzeResume(resumeText, {
-                title: job.title,
-                company: job.companyName,
-                skills: job.skills,
-                description: job.description,
-                experienceLevel: job.experienceLevel,
-                jobType: job.jobType,
-                location: job.location,
-            });
-
-            // Update application with AI results
-            application.aiMatchScore = aiAnalysis.matchScore;
-            application.aiJustification = aiAnalysis.justification;
-            application.aiAnalysisDate = new Date();
-
-            // Determine next stage based on score
-            if (aiAnalysis.matchScore >= RESUME_THRESHOLD_FOR_QUIZ) {
-                // Qualify for quiz
-                application.screeningStage = 'quiz_pending';
-                application.status = 'shortlisted';
-                application.stageHistory.push({
-                    stage: 'resume_screening',
-                    timestamp: new Date(),
-                    status: 'passed',
-                    score: aiAnalysis.matchScore,
-                    notes: 'Qualified for skills assessment'
-                });
-
-                // Generate quiz if it doesn't exist for this job
-                let quiz = await Quiz.findOne({ job: jobId });
-                if (!quiz) {
-                    const questions = await generateQuizQuestions({
-                        title: job.title,
-                        skills: job.skills,
-                        description: job.description,
-                    });
-
-                    quiz = new Quiz({
-                        job: jobId,
-                        questions: questions,
-                        passingScore: QUIZ_PASSING_SCORE,
-                        timeLimit: 30 // 30 minutes
-                    });
-                    await quiz.save();
-                }
-
-                // Send quiz invitation email
-                await sendApplicationEmail(application, 'quiz_invitation', {
-                    quizUrl: `${process.env.FRONTEND_URL}/candidate/quiz/${application._id}`,
-                    timeLimit: quiz.timeLimit,
-                    numberOfQuestions: quiz.questions.length
-                });
-
-                await application.save();
-
-                res.status(201).json({
-                    success: true,
-                    message: 'Congratulations! Your application has been submitted and you qualify for the next stage.',
-                    application: {
-                        _id: application._id,
-                        status: application.status,
-                        aiMatchScore: application.aiMatchScore,
-                        screeningStage: application.screeningStage,
-                        nextStep: {
-                            stage: 'quiz',
-                            message: 'Please check your email for the skills assessment quiz invitation.',
-                            quizAvailable: true
-                        }
-                    }
-                });
-
-            } else {
-                // Not qualified - reject with feedback
-                application.screeningStage = 'resume_rejected';
-                application.status = 'rejected';
-                application.stageHistory.push({
-                    stage: 'resume_screening',
-                    timestamp: new Date(),
-                    status: 'failed',
-                    score: aiAnalysis.matchScore,
-                    notes: 'Did not meet minimum requirements'
-                });
-
-                await application.save();
-
-                // Send rejection email with feedback
-                await sendApplicationEmail(application, 'resume_rejected', {
-                    score: aiAnalysis.matchScore,
-                    feedback: aiAnalysis.justification,
-                    threshold: RESUME_THRESHOLD_FOR_QUIZ
-                });
-
-                res.status(201).json({
-                    success: false,
-                    message: 'Thank you for your application. Unfortunately, your profile does not match the current requirements for this position.',
-                    application: {
-                        _id: application._id,
-                        status: application.status,
-                        aiMatchScore: application.aiMatchScore,
-                        feedback: aiAnalysis.justification,
-                        suggestions: 'Consider gaining more experience in the required skills and reapplying in the future.'
-                    }
-                });
-            }
-
-        } catch (aiError) {
-            console.error('AI analysis error:', aiError);
-            
-            // If AI fails, still save the application but mark for manual review
-            application.screeningStage = 'manual_review_needed';
-            application.status = 'pending';
-            await application.save();
-
-            res.status(201).json({
-                success: true,
-                message: 'Application submitted. It will be reviewed by our team.',
-                application: {
-                    _id: application._id,
-                    status: application.status,
-                }
-            });
-        }
-
-    } catch (error) {
-        console.error('Error in job application:', error);
-        res.status(500).json({ 
-            message: 'Error submitting application', 
-            error: error.message 
-        });
-    }
-};
 
 // @desc    Get quiz for an application
 // @route   GET /api/applications/:applicationId/quiz
