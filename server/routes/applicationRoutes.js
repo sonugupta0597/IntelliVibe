@@ -5,14 +5,24 @@ const path = require('path');
 const { protect, employer } = require('../middleware/authMiddleware');
 
 // Import all controller functions
+// Add these to your applicationRoutes.js
+
+// Import the quiz-related controller functions
 const { 
     applyForJob, 
     getApplicantsForJob,
-    updateApplicationStatus,
-    bulkUpdateApplications,
-    getApplicationStats,
-    getMyCandidateApplications // Add this
+    getMyCandidateApplications,
+    getQuizForApplication,
+    submitQuizAnswers
 } = require('../controllers/applicationController');
+
+// Add these routes:
+
+// GET quiz for a specific application
+router.get('/:applicationId/quiz', protect, getQuizForApplication);
+
+// POST submit quiz answers
+router.post('/:applicationId/quiz/submit', protect, submitQuizAnswers);
 
 // Setup multer for file storage
 const storage = multer.diskStorage({

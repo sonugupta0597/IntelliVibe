@@ -15,6 +15,8 @@ app.use(cors({
   credentials: true 
 }));
 
+
+
 // Middleware
 app.use(cors()); 
 app.use(express.json()); 
@@ -33,10 +35,36 @@ mongoose.connect(process.env.MONGO_URI, {
 
 
 // Simple Test Route
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     res.send('API is running...');
+    console.log("auth controller");
+    const { firstName, lastName, email, password, role } = req.body;
+   // console.log("auth controller");
+    try {
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const user = await User.create({ firstName, lastName, email, password, role });
+
+        if (user) {
+            res.status(201).json({
+                _id: user._id,
+                firstName: user.firstName,
+                email: user.email,
+                role: user.role,
+                token: generateToken(user._id),
+            });
+        } else {
+            res.status(400).json({ message: 'Invalid user data' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
 });
 
+console.log('server.js loaded');
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes); // Add this
 app.use('/api/applications', applicationRoutes);

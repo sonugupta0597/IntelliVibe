@@ -392,6 +392,8 @@ exports.applyForJob = async (req, res) => {
             const pdfData = await pdfParse(dataBuffer);
             const resumeText = pdfData.text;
 
+            console.log("resumeText", resumeText);
+            
             // Analyze with AI
             const aiAnalysis = await analyzeResume(resumeText, {
                 title: job.title,

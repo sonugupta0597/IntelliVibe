@@ -10,8 +10,189 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+// Email templates
+const emailTemplates = {
+    quiz_invitation: (data) => ({
+        subject: `Skills Assessment Invitation - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Congratulations! You've Advanced to the Next Stage</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Great news! Your application for <strong>${data.job.title}</strong> at 
+                <strong>${data.job.companyName}</strong> has been reviewed, and you've been 
+                selected to proceed to the skills assessment stage.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Your Resume Score: ${data.aiMatchScore}%</h3>
+                    <p style="margin-bottom: 0;">${data.aiJustification}</p>
+                </div>
+                
+                <h3>Next Step: Technical Skills Assessment</h3>
+                <ul>
+                    <li><strong>Number of Questions:</strong> ${data.numberOfQuestions || 10}</li>
+                    <li><strong>Time Limit:</strong> ${data.timeLimit || 30} minutes</li>
+                    <li><strong>Passing Score:</strong> 70%</li>
+                    <li><strong>Format:</strong> Multiple choice technical questions</li>
+                </ul>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${data.quizUrl}" style="background-color: #2563eb; color: white; 
+                       padding: 12px 30px; text-decoration: none; border-radius: 6px; 
+                       display: inline-block; font-weight: bold;">
+                        Start Skills Assessment
+                    </a>
+                </div>
+                
+                <p><strong>Important:</strong></p>
+                <ul>
+                    <li>You have 7 days to complete the assessment</li>
+                    <li>Once started, you must complete it in one session</li>
+                    <li>Make sure you have a stable internet connection</li>
+                    <li>The quiz will test your technical knowledge of the required skills</li>
+                </ul>
+                
+                <p>Best of luck!</p>
+                <p>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    resume_rejected: (data) => ({
+        subject: `Application Update - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc2626;">Application Status Update</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Thank you for your interest in the <strong>${data.job.title}</strong> position 
+                at <strong>${data.job.companyName}</strong>.</p>
+                
+                <p>After careful review of your application, we regret to inform you that we will not 
+                be moving forward with your candidacy at this time.</p>
+                
+                <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #dc2626;">AI Analysis Results</h3>
+                    <p><strong>Match Score:</strong> ${data.score}% (Minimum required: ${data.threshold}%)</p>
+                    <p><strong>Feedback:</strong> ${data.feedback}</p>
+                </div>
+                
+                <h3>How to Improve Your Chances:</h3>
+                <ul>
+                    <li>Focus on developing the required technical skills</li>
+                    <li>Gain more hands-on experience with the technologies mentioned</li>
+                    <li>Work on projects that demonstrate these skills</li>
+                    <li>Consider certifications in the key technologies</li>
+                </ul>
+                
+                <p>We encourage you to apply for future positions that better match your current 
+                skill set and experience level.</p>
+                
+                <p>Thank you for considering us as a potential employer.</p>
+                
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    quiz_failed: (data) => ({
+        subject: `Skills Assessment Results - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc2626;">Skills Assessment Results</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Thank you for completing the skills assessment for the <strong>${data.job.title}</strong> 
+                position at <strong>${data.job.companyName}</strong>.</p>
+                
+                <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Assessment Results</h3>
+                    <p><strong>Your Score:</strong> ${data.score}%</p>
+                    <p><strong>Passing Score:</strong> ${data.passingScore}%</p>
+                </div>
+                
+                <p>Unfortunately, your score did not meet the minimum requirement for this position. 
+                While this specific opportunity will not be moving forward, we were impressed by your 
+                interest and effort.</p>
+                
+                <h3>Areas for Improvement:</h3>
+                <p>Based on the assessment, we recommend strengthening your knowledge in the technical 
+                areas covered by the quiz. Consider:</p>
+                <ul>
+                    <li>Online courses and tutorials</li>
+                    <li>Hands-on practice with real projects</li>
+                    <li>Contributing to open-source projects</li>
+                    <li>Building a portfolio that demonstrates these skills</li>
+                </ul>
+                
+                <p>We encourage you to continue developing your skills and apply for future opportunities 
+                with us.</p>
+                
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    video_invitation: (data) => ({
+        subject: `Video Interview Invitation - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Congratulations on Passing the Skills Assessment!</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Excellent work! You've successfully passed the technical assessment for the 
+                <strong>${data.job.title}</strong> position at <strong>${data.job.companyName}</strong>.</p>
+                
+                <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Your Progress So Far</h3>
+                    <p>✅ Resume Review: ${data.aiMatchScore}%</p>
+                    <p>✅ Skills Assessment: ${data.quizScore}%</p>
+                    <p>📹 Next: Video Interview</p>
+                </div>
+                
+                <h3>Final Stage: AI-Powered Video Interview</h3>
+                <p>You're now invited to complete a video interview where you'll answer technical 
+                and behavioral questions related to the position.</p>
+                
+                <ul>
+                    <li><strong>Format:</strong> 5 technical questions</li>
+                    <li><strong>Time per question:</strong> 2-3 minutes</li>
+                    <li><strong>Total duration:</strong> Approximately 15-20 minutes</li>
+                    <li><strong>Deadline:</strong> Please complete within 5 days</li>
+                </ul>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.FRONTEND_URL}/candidate/video-interview/${data._id}" 
+                       style="background-color: #2563eb; color: white; padding: 12px 30px; 
+                       text-decoration: none; border-radius: 6px; display: inline-block; 
+                       font-weight: bold;">
+                        Start Video Interview
+                    </a>
+                </div>
+                
+                <p><strong>Tips for Success:</strong></p>
+                <ul>
+                    <li>Find a quiet, well-lit space</li>
+                    <li>Test your camera and microphone beforehand</li>
+                    <li>Dress professionally</li>
+                    <li>Have a stable internet connection</li>
+                    <li>Be concise but thorough in your responses</li>
+                </ul>
+                
+                <p>This is the final stage of our screening process. Give it your best!</p>
+                
+                <p>Best of luck,<br>The IntelliVibe Team</p>
+            </div>
+        `
+    })
+};
+
 /**
- * Send application-related emails
+ * Send email notification to candidate
  */
 exports.sendApplicationEmail = async (application, template, additionalData = {}) => {
     try {
@@ -20,201 +201,35 @@ exports.sendApplicationEmail = async (application, template, additionalData = {}
             .populate('candidate', 'firstName lastName email')
             .populate('job', 'title companyName');
 
-        const emailTemplates = {
-            quiz_invitation: {
-                subject: `Skills Assessment Invitation - ${populatedApp.job.title}`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #333;">Congratulations ${populatedApp.candidate.firstName}!</h2>
-                        
-                        <p>Great news! Your application for <strong>${populatedApp.job.title}</strong> at 
-                        <strong>${populatedApp.job.companyName}</strong> has passed the initial screening.</p>
-                        
-                        <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="margin-top: 0;">Your Resume Match Score: ${application.aiMatchScore}%</h3>
-                            <p style="margin-bottom: 0;">${application.aiJustification}</p>
-                        </div>
-                        
-                        <h3>Next Step: Skills Assessment Quiz</h3>
-                        <p>You're invited to complete a technical skills assessment. Here are the details:</p>
-                        
-                        <ul style="line-height: 1.8;">
-                            <li><strong>Number of Questions:</strong> ${additionalData.numberOfQuestions || 10}</li>
-                            <li><strong>Time Limit:</strong> ${additionalData.timeLimit || 30} minutes</li>
-                            <li><strong>Passing Score:</strong> 70%</li>
-                            <li><strong>Question Type:</strong> Multiple choice technical questions</li>
-                        </ul>
-                        
-                        <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p style="margin: 0;"><strong>Important:</strong> Once you start the quiz, you must complete it in one session. Make sure you have a stable internet connection and enough time.</p>
-                        </div>
-                        
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${additionalData.quizUrl || process.env.FRONTEND_URL + '/candidate/dashboard'}" 
-                               style="background-color: #2196F3; color: white; padding: 14px 28px; 
-                                      text-decoration: none; border-radius: 6px; display: inline-block;
-                                      font-weight: bold;">
-                                Take the Quiz
-                            </a>
-                        </div>
-                        
-                        <p><strong>Deadline:</strong> Please complete the quiz within 7 days.</p>
-                        
-                        <p>Best of luck!</p>
-                        <p>The IntelliVibe Team</p>
-                    </div>
-                `,
-            },
-            
-            resume_rejected: {
-                subject: `Application Update - ${populatedApp.job.title}`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #333;">Hello ${populatedApp.candidate.firstName},</h2>
-                        
-                        <p>Thank you for your interest in the <strong>${populatedApp.job.title}</strong> position at 
-                        <strong>${populatedApp.job.companyName}</strong>.</p>
-                        
-                        <p>After careful review of your application, we've determined that your profile doesn't fully match 
-                        our current requirements for this position.</p>
-                        
-                        <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="margin-top: 0;">Your Match Score: ${additionalData.score}%</h3>
-                            <p>Required Score: ${additionalData.threshold}%</p>
-                            <p style="margin-bottom: 0;"><strong>Feedback:</strong> ${additionalData.feedback}</p>
-                        </div>
-                        
-                        <h3>How to Improve Your Chances:</h3>
-                        <ul style="line-height: 1.8;">
-                            <li>Review the job requirements and identify skill gaps</li>
-                            <li>Gain hands-on experience with the required technologies</li>
-                            <li>Update your resume to better highlight relevant experience</li>
-                            <li>Consider taking online courses or certifications</li>
-                        </ul>
-                        
-                        <p>We encourage you to apply for other positions that better match your current skill set and 
-                        experience. Your profile will remain in our database for future opportunities.</p>
-                        
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${process.env.FRONTEND_URL}/jobs" 
-                               style="background-color: #4CAF50; color: white; padding: 12px 24px; 
-                                      text-decoration: none; border-radius: 6px; display: inline-block;">
-                                Browse Other Jobs
-                            </a>
-                        </div>
-                        
-                        <p>Thank you for considering us for your career journey.</p>
-                        <p>Best regards,<br>The IntelliVibe Team</p>
-                    </div>
-                `,
-            },
-            
-            quiz_failed: {
-                subject: `Quiz Results - ${populatedApp.job.title}`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #333;">Hello ${populatedApp.candidate.firstName},</h2>
-                        
-                        <p>Thank you for completing the skills assessment for the <strong>${populatedApp.job.title}</strong> 
-                        position at <strong>${populatedApp.job.companyName}</strong>.</p>
-                        
-                        <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="margin-top: 0;">Quiz Results</h3>
-                            <p>Your Score: <strong>${additionalData.score}%</strong></p>
-                            <p>Passing Score: <strong>${additionalData.passingScore}%</strong></p>
-                            <p style="margin-bottom: 0;">Unfortunately, you didn't meet the minimum score required to proceed to the next stage.</p>
-                        </div>
-                        
-                        <h3>What This Means:</h3>
-                        <p>While you showed promise in your resume, the technical assessment indicates that you may need 
-                        to strengthen certain skills for this particular role.</p>
-                        
-                        <h3>Recommendations:</h3>
-                        <ul style="line-height: 1.8;">
-                            <li>Review the core technologies mentioned in the job description</li>
-                            <li>Practice with online coding challenges and technical assessments</li>
-                            <li>Build projects that demonstrate proficiency in the required skills</li>
-                            <li>Consider applying for positions that better match your current skill level</li>
-                        </ul>
-                        
-                        <p>Don't be discouraged! Many successful developers have faced similar challenges. Use this as a 
-                        learning opportunity to identify areas for improvement.</p>
-                        
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${process.env.FRONTEND_URL}/jobs" 
-                               style="background-color: #4CAF50; color: white; padding: 12px 24px; 
-                                      text-decoration: none; border-radius: 6px; display: inline-block;">
-                                Explore Other Opportunities
-                            </a>
-                        </div>
-                        
-                        <p>We appreciate your interest and wish you the best in your job search.</p>
-                        <p>Best regards,<br>The IntelliVibe Team</p>
-                    </div>
-                `,
-            },
-            
-            video_invitation: {
-                subject: `Video Interview Invitation - ${populatedApp.job.title}`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #333;">Excellent Work, ${populatedApp.candidate.firstName}!</h2>
-                        
-                        <p>Congratulations on passing the skills assessment for the <strong>${populatedApp.job.title}</strong> 
-                        position at <strong>${populatedApp.job.companyName}</strong>!</p>
-                        
-                        <div style="background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="margin-top: 0;">Your Progress So Far:</h3>
-                            <p>✅ Resume Score: ${application.aiMatchScore}%</p>
-                            <p>✅ Quiz Score: ${application.quizScore}%</p>
-                            <p style="margin-bottom: 0;">You're now in the top candidates for this position!</p>
-                        </div>
-                        
-                        <h3>Final Step: Video Interview</h3>
-                        <p>We'd like to get to know you better through a brief video interview. This will be an 
-                        AI-powered interview where you'll answer questions about your experience and approach to work.</p>
-                        
-                        <ul style="line-height: 1.8;">
-                            <li><strong>Format:</strong> Pre-recorded video responses</li>
-                            <li><strong>Duration:</strong> Approximately 15-20 minutes</li>
-                            <li><strong>Questions:</strong> 5-7 behavioral and technical questions</li>
-                            <li><strong>Preparation:</strong> Have a quiet space and stable internet</li>
-                        </ul>
-                        
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${process.env.FRONTEND_URL}/candidate/video-interview/${application._id}" 
-                               style="background-color: #4CAF50; color: white; padding: 14px 28px; 
-                                      text-decoration: none; border-radius: 6px; display: inline-block;
-                                      font-weight: bold;">
-                                Start Video Interview
-                            </a>
-                        </div>
-                        
-                        <p><strong>Deadline:</strong> Please complete the video interview within 5 days.</p>
-                        
-                        <p>You're almost there! Best of luck with the final step.</p>
-                        <p>The IntelliVibe Team</p>
-                    </div>
-                `,
-            }
-        };
+        if (!populatedApp) {
+            throw new Error('Application not found');
+        }
 
         const emailTemplate = emailTemplates[template];
         if (!emailTemplate) {
             throw new Error(`Email template '${template}' not found`);
         }
 
+        // Merge application data with additional data
+        const emailData = {
+            ...populatedApp.toObject(),
+            ...additionalData
+        };
+
+        const { subject, html } = emailTemplate(emailData);
+
         await transporter.sendMail({
             from: `"IntelliVibe" <${process.env.EMAIL_USER}>`,
             to: populatedApp.candidate.email,
-            subject: emailTemplate.subject,
-            html: emailTemplate.html,
+            subject: subject,
+            html: html,
         });
 
-        console.log(`Email sent successfully: ${template} to ${populatedApp.candidate.email}`);
-        
+        console.log(`Email sent: ${template} to ${populatedApp.candidate.email}`);
+        return true;
     } catch (error) {
         console.error('Error sending email:', error);
         // Don't throw - email failure shouldn't break the application flow
+        return false;
     }
 };

@@ -10,6 +10,7 @@ import Register from './pages/Register';
 import Jobs from './pages/Jobs'; // <-- The new public jobs page
 import EmployerDashboard from './pages/EmployerDashboard'; // <-- The new protected employer page
 import CandidateDashboard from './pages/CandidateDashboard'; // <-- Add a placeholder for this too
+import QuizPage from './pages/QuizPage';
 
 // Auth Component
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -27,7 +28,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/jobs" element={<Jobs />} />
-
+          <Route path="/candidate/quiz/:applicationId" element={
+            <ProtectedRoute role="candidate">
+                <QuizPage />
+            </ProtectedRoute>
+          } />
 
           {/* --- PROTECTED EMPLOYER ROUTES --- */}
           {/* These routes can only be accessed by logged-in users with the 'employer' role */}
@@ -42,6 +47,7 @@ function App() {
           {/* These routes can only be accessed by logged-in users with the 'candidate' role */}
           <Route element={<ProtectedRoute requiredRole="candidate" />}>
              <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
+             <Route path="/candidate/quiz/:applicationId" element={<QuizPage />} />
              {/* e.g., <Route path="/candidate/applications" element={<MyApplications />} /> */}
           </Route>
 

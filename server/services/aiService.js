@@ -7,13 +7,10 @@ const openai = new OpenAI({
 
 /**
  * Analyzes a resume against a job description using AI
- * @param {string} resumeText - The extracted text from the resume
- * @param {Object} jobDetails - The job posting details
- * @returns {Promise<{matchScore: number, justification: string}>}
  */
 exports.analyzeResume = async (resumeText, jobDetails) => {
     try {
-        const prompt = `You are an expert recruitment AI assistant. Analyze the following resume against the job requirements and provide a match score.
+        const prompt = `You are an expert technical recruiter. Analyze this resume against the job requirements and provide a detailed assessment.
 
 Job Details:
 - Title: ${jobDetails.title}
@@ -21,27 +18,25 @@ Job Details:
 - Required Skills: ${jobDetails.skills?.join(', ') || 'Not specified'}
 - Description: ${jobDetails.description}
 - Experience Level: ${jobDetails.experienceLevel || 'Not specified'}
-- Job Type: ${jobDetails.jobType || 'Not specified'}
-- Location: ${jobDetails.location}
 
 Resume Text:
 ${resumeText}
 
-Please analyze how well this candidate matches the job requirements. Consider:
-1. Relevant skills and technologies
-2. Years of experience
+Analyze the candidate's fit for this position considering:
+1. Technical skills match (most important)
+2. Relevant experience and projects
 3. Educational background
-4. Previous job roles and responsibilities
-5. Industry experience
+4. Industry/domain knowledge
+5. Years of experience
 
-Respond with a JSON object containing:
-- matchScore: A number between 0-100 representing the match percentage
-- justification: A brief explanation (2-3 sentences) of the score
-
-Example response:
+Provide a response in JSON format:
 {
-  "matchScore": 75,
-  "justification": "The candidate has strong experience with 3 out of 5 required technologies and relevant industry experience. However, they lack the specific leadership experience mentioned in the job description."
+  "matchScore": <0-100>,
+  "justification": "<2-3 sentences explaining the score>",
+  "strengths": ["strength1", "strength2", "strength3"],
+  "gaps": ["gap1", "gap2", "gap3"],
+  "matchedSkills": ["skill1", "skill2"],
+  "missingSkills": ["skill1", "skill2"]
 }`;
 
         const response = await openai.chat.completions.create({
@@ -49,7 +44,7 @@ Example response:
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a professional recruitment assistant. Always respond with valid JSON only.',
+                    content: 'You are a technical recruiter with expertise in evaluating candidates. Always respond with valid JSON only.',
                 },
                 {
                     role: 'user',
@@ -57,30 +52,34 @@ Example response:
                 },
             ],
             temperature: 0.3,
-            max_tokens: 200,
+            max_tokens: 500,
         });
 
         const content = response.choices[0].message.content;
         
-        // Parse the JSON response
         try {
             const result = JSON.parse(content);
             
-            // Validate the response structure
-            if (typeof result.matchScore !== 'number' || !result.justification) {
-                throw new Error('Invalid response structure');
-            }
-            
-            // Ensure matchScore is within valid range
+            // Validate and sanitize the response
             result.matchScore = Math.max(0, Math.min(100, result.matchScore));
             
-            return result;
+            return {
+                matchScore: result.matchScore,
+                justification: result.justification || 'Analysis completed.',
+                strengths: result.strengths || [],
+                gaps: result.gaps || [],
+                matchedSkills: result.matchedSkills || [],
+                missingSkills: result.missingSkills || []
+            };
         } catch (parseError) {
             console.error('Error parsing AI response:', parseError);
-            // Return a default response if parsing fails
             return {
                 matchScore: 0,
                 justification: 'Unable to properly analyze the resume at this time.',
+                strengths: [],
+                gaps: [],
+                matchedSkills: [],
+                missingSkills: []
             };
         }
     } catch (error) {
@@ -91,56 +90,46 @@ Example response:
 
 /**
  * Generates technical quiz questions based on job requirements
- * @param {Object} jobDetails - The job posting details
- * @returns {Promise<Array>} Array of quiz questions
  */
 exports.generateQuizQuestions = async (jobDetails) => {
     try {
-        const prompt = `You are an expert technical interviewer. Generate exactly 10 multiple-choice questions to test candidates for the following position. The questions should be technical and directly related to the required skills.
+        const prompt = `You are an expert technical interviewer. Generate a technical skills assessment quiz for the following position:
 
-Job Details:
-- Title: ${jobDetails.title}
-- Required Skills: ${jobDetails.skills?.join(', ') || 'Not specified'}
-- Description: ${jobDetails.description}
+Job Title: ${jobDetails.title}
+Required Skills: ${jobDetails.skills?.join(', ') || 'Not specified'}
+Job Description: ${jobDetails.description}
 
-Requirements for questions:
-1. Questions must be technical and test practical knowledge
-2. Focus on the specific technologies and skills mentioned in the job
-3. Mix difficulty levels: 3 easy, 4 medium, 3 hard
-4. Each question must have exactly 4 options
-5. Only one correct answer per question
-6. Questions should test real-world application, not just theory
-7. Avoid trivial or googleable facts
+Create exactly 10 multiple-choice questions that:
+1. Test practical, hands-on knowledge of the required skills
+2. Include real-world scenarios and problem-solving
+3. Range from basic to advanced difficulty
+4. Focus on technical concepts, best practices, and common challenges
+5. Are specific to the technologies and skills mentioned
 
-Respond with a JSON array of exactly 10 questions with this structure:
+For each question:
+- Make options plausible to avoid obvious answers
+- Include common misconceptions as distractors
+- Ensure only one option is clearly correct
+- Provide a brief explanation for the correct answer
+
+Return a JSON array with exactly 10 questions in this format:
 [
   {
-    "question": "When working with React hooks, which of the following would cause an infinite re-render loop?",
-    "options": [
-      "Using useState inside useEffect without dependencies",
-      "Calling setState directly in the component body",
-      "Using useCallback without dependencies",
-      "Passing an empty dependency array to useEffect"
-    ],
-    "correctAnswer": 1,
-    "difficulty": "medium",
-    "skill": "React",
-    "explanation": "Calling setState directly in the component body causes the component to re-render immediately, which calls setState again, creating an infinite loop."
+    "question": "The question text",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0,
+    "explanation": "Brief explanation of why this is correct",
+    "difficulty": "easy|medium|hard",
+    "skill": "specific skill being tested"
   }
-]
-
-Make sure:
-- correctAnswer is the index (0-3) of the correct option
-- Each question tests practical knowledge relevant to the job
-- Questions are clear and unambiguous
-- All options are plausible to avoid obvious answers`;
+]`;
 
         const response = await openai.chat.completions.create({
-            model: 'gpt-4',
+            model: 'gpt-3.5-turbo',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a technical interviewer creating assessment questions. Always respond with valid JSON array only.',
+                    content: 'You are a technical interviewer creating assessment questions. Generate exactly 10 questions. Always respond with valid JSON array only.',
                 },
                 {
                     role: 'user',
@@ -148,7 +137,7 @@ Make sure:
                 },
             ],
             temperature: 0.7,
-            max_tokens: 3000,
+            max_tokens: 2500,
         });
 
         const content = response.choices[0].message.content;
@@ -156,203 +145,123 @@ Make sure:
         try {
             const questions = JSON.parse(content);
             
-            // Validate the response
+            // Validate the questions
             if (!Array.isArray(questions) || questions.length !== 10) {
                 throw new Error('Invalid number of questions generated');
             }
             
-            // Validate each question structure
-            const validatedQuestions = questions.map((q, index) => {
-                if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || 
-                    typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer > 3) {
-                    throw new Error(`Invalid question structure at index ${index}`);
-                }
-                
-                return {
-                    question: q.question,
-                    options: q.options,
-                    correctAnswer: q.correctAnswer,
-                    difficulty: q.difficulty || 'medium',
-                    skill: q.skill || 'General',
-                    explanation: q.explanation || ''
-                };
-            });
+            // Ensure all questions have required fields
+            const validatedQuestions = questions.map((q, index) => ({
+                question: q.question || `Question ${index + 1}`,
+                options: Array.isArray(q.options) && q.options.length === 4 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+                correctAnswer: typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer <= 3 ? q.correctAnswer : 0,
+                explanation: q.explanation || 'No explanation provided',
+                difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
+                skill: q.skill || 'General'
+            }));
             
             return validatedQuestions;
-            
         } catch (parseError) {
             console.error('Error parsing quiz questions:', parseError);
             throw new Error('Failed to generate valid quiz questions');
         }
-        
     } catch (error) {
         console.error('Error generating quiz questions:', error);
-        
-        // Fallback: Generate generic technical questions if AI fails
-        return generateFallbackQuestions(jobDetails.skills);
+        throw new Error('Failed to generate quiz: ' + error.message);
     }
 };
 
 /**
- * Generates fallback questions if AI fails
+ * Generates video interview questions based on job requirements and quiz performance
  */
-function generateFallbackQuestions(skills) {
-    const fallbackQuestions = [
-        {
-            question: "Which of the following best describes the principle of DRY in software development?",
-            options: [
-                "Deploy Rapidly Yesterday",
-                "Don't Repeat Yourself",
-                "Develop, Review, Yield",
-                "Data Representation Year"
+exports.generateVideoInterviewQuestions = async (jobDetails, quizScore) => {
+    try {
+        const prompt = `Generate 5 technical video interview questions for a ${jobDetails.title} position.
+
+The candidate scored ${quizScore}% on the technical quiz.
+Required skills: ${jobDetails.skills?.join(', ')}
+
+Create questions that:
+1. Test problem-solving and technical thinking
+2. Assess communication skills
+3. Explore real-world experience
+4. Include at least one system design or architecture question
+5. Match the candidate's demonstrated skill level
+
+Format as JSON array:
+[
+  {
+    "question": "Question text",
+    "timeLimit": 120,
+    "category": "technical|problem-solving|experience|system-design",
+    "assessmentCriteria": ["criteria1", "criteria2"],
+    "followUp": "Optional follow-up question"
+  }
+]`;
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a senior technical interviewer. Create thoughtful video interview questions.',
+                },
+                {
+                    role: 'user',
+                    content: prompt,
+                },
             ],
-            correctAnswer: 1,
-            difficulty: "easy",
-            skill: "General Programming",
-            explanation: "DRY stands for Don't Repeat Yourself, a principle aimed at reducing repetition in code."
-        },
-        {
-            question: "What is the time complexity of searching for an element in a balanced binary search tree?",
-            options: [
-                "O(1)",
-                "O(n)",
-                "O(log n)",
-                "O(n log n)"
-            ],
-            correctAnswer: 2,
-            difficulty: "medium",
-            skill: "Data Structures",
-            explanation: "In a balanced BST, searching takes O(log n) time as we eliminate half the tree at each step."
-        },
-        {
-            question: "Which HTTP status code indicates that a resource has been successfully created?",
-            options: [
-                "200 OK",
-                "201 Created",
-                "204 No Content",
-                "302 Found"
-            ],
-            correctAnswer: 1,
-            difficulty: "easy",
-            skill: "Web Development",
-            explanation: "201 Created is the standard response for successful resource creation in RESTful APIs."
-        },
-        {
-            question: "What is the purpose of indexing in databases?",
-            options: [
-                "To encrypt sensitive data",
-                "To speed up data retrieval operations",
-                "To compress data for storage",
-                "To validate data integrity"
-            ],
-            correctAnswer: 1,
-            difficulty: "medium",
-            skill: "Database",
-            explanation: "Indexes improve query performance by allowing faster data retrieval."
-        },
-        {
-            question: "Which of the following is NOT a principle of Object-Oriented Programming?",
-            options: [
-                "Encapsulation",
-                "Inheritance",
-                "Compilation",
-                "Polymorphism"
-            ],
-            correctAnswer: 2,
-            difficulty: "easy",
-            skill: "OOP",
-            explanation: "Compilation is a process, not an OOP principle. The four main OOP principles are Encapsulation, Inheritance, Polymorphism, and Abstraction."
-        },
-        {
-            question: "What does the 'git merge' command do?",
-            options: [
-                "Deletes a branch",
-                "Creates a new branch",
-                "Combines changes from different branches",
-                "Reverts the last commit"
-            ],
-            correctAnswer: 2,
-            difficulty: "medium",
-            skill: "Version Control",
-            explanation: "Git merge combines changes from one branch into another branch."
-        },
-        {
-            question: "Which design pattern is used to ensure a class has only one instance?",
-            options: [
-                "Factory Pattern",
-                "Observer Pattern",
-                "Singleton Pattern",
-                "Strategy Pattern"
-            ],
-            correctAnswer: 2,
-            difficulty: "medium",
-            skill: "Design Patterns",
-            explanation: "The Singleton pattern ensures a class has only one instance and provides global access to it."
-        },
-        {
-            question: "What is the main purpose of unit testing?",
-            options: [
-                "To test the entire application",
-                "To test individual components in isolation",
-                "To test user interfaces",
-                "To test database connections"
-            ],
-            correctAnswer: 1,
-            difficulty: "easy",
-            skill: "Testing",
-            explanation: "Unit testing focuses on testing individual components or functions in isolation."
-        },
-        {
-            question: "Which of the following is true about REST APIs?",
-            options: [
-                "They must use XML for data exchange",
-                "They are stateful by design",
-                "They use HTTP methods like GET, POST, PUT, DELETE",
-                "They require SOAP protocol"
-            ],
-            correctAnswer: 2,
-            difficulty: "medium",
-            skill: "API Development",
-            explanation: "REST APIs use standard HTTP methods and are stateless by design."
-        },
-        {
-            question: "What is the purpose of a load balancer in system architecture?",
-            options: [
-                "To store cached data",
-                "To distribute traffic across multiple servers",
-                "To encrypt network traffic",
-                "To compile source code"
-            ],
-            correctAnswer: 1,
-            difficulty: "medium",
-            skill: "System Design",
-            explanation: "Load balancers distribute incoming traffic across multiple servers to ensure high availability and reliability."
-        }
-    ];
-    
-    // Customize questions based on skills if possible
-    if (skills && skills.length > 0) {
-        // Add skill-specific context to questions
-        fallbackQuestions.forEach(q => {
-            if (skills.some(skill => q.skill.toLowerCase().includes(skill.toLowerCase()))) {
-                q.skill = skills.find(skill => q.skill.toLowerCase().includes(skill.toLowerCase())) || q.skill;
-            }
+            temperature: 0.6,
+            max_tokens: 1000,
         });
+
+        const content = response.choices[0].message.content;
+        return JSON.parse(content);
+    } catch (error) {
+        console.error('Error generating video questions:', error);
+        throw new Error('Failed to generate video interview questions');
     }
-    
-    return fallbackQuestions;
-}
+};
 
 /**
- * Analyzes video interview responses (placeholder for future implementation)
+ * Analyzes video interview transcript
  */
-exports.analyzeVideoInterview = async (transcripts, jobDetails) => {
-    // This will be implemented in Phase 3
-    return {
-        overallScore: 0,
-        communicationScore: 0,
-        technicalScore: 0,
-        confidenceScore: 0,
-        feedback: "Video analysis not yet implemented"
-    };
+exports.analyzeVideoInterview = async (transcript, questions, jobDetails) => {
+    try {
+        const prompt = `Analyze this video interview transcript for a ${jobDetails.title} position.
+
+Questions and Answers:
+${transcript}
+
+Evaluate:
+1. Technical accuracy and knowledge depth
+2. Communication clarity
+3. Problem-solving approach
+4. Relevant experience mentioned
+5. Red flags or concerns
+
+Provide scores (0-100) and detailed feedback in JSON format.`;
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are an expert interviewer analyzing candidate responses.',
+                },
+                {
+                    role: 'user',
+                    content: prompt,
+                },
+            ],
+            temperature: 0.3,
+            max_tokens: 800,
+        });
+
+        const content = response.choices[0].message.content;
+        return JSON.parse(content);
+    } catch (error) {
+        console.error('Error analyzing video interview:', error);
+        throw new Error('Failed to analyze video interview');
+    }
 };

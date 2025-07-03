@@ -53,6 +53,8 @@ const PostJobForm = ({ onJobPosted }) => {
         setApiError(null);
 
         try {
+            console.log("onSubmit called");
+            console.log(userInfo.token);
             const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
             
             // Prepare the data with proper formatting
