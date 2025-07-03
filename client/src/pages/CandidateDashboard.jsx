@@ -111,15 +111,17 @@ const CandidateDashboard = () => {
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg">{application.job.title}</CardTitle>
+                        <CardTitle className="text-lg">
+                            {application.job?.title || <span className="text-red-500">[Job no longer available]</span>}
+                        </CardTitle>
                         <CardDescription className="mt-1">
                             <div className="flex items-center gap-2 text-sm">
                                 <Building2 className="h-3 w-3" />
-                                {application.job.companyName}
+                                {application.job?.companyName || <span className="text-red-500">N/A</span>}
                             </div>
                             <div className="flex items-center gap-2 text-sm mt-1">
                                 <MapPin className="h-3 w-3" />
-                                {application.job.location}
+                                {application.job?.location || <span className="text-red-500">N/A</span>}
                             </div>
                         </CardDescription>
                     </div>
@@ -177,8 +179,8 @@ const CandidateDashboard = () => {
                         <Calendar className="h-3 w-3" />
                         Applied {new Date(application.createdAt).toLocaleDateString()}
                     </div>
-                    <Button asChild variant="ghost" size="sm">
-                        <Link to={`/jobs/${application.job._id}`}>
+                    <Button asChild variant="ghost" size="sm" disabled={!application.job?._id}>
+                        <Link to={application.job?._id ? `/jobs/${application.job._id}` : "#"}>
                             View Job <ExternalLink className="ml-1 h-3 w-3" />
                         </Link>
                     </Button>

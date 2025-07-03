@@ -38,6 +38,8 @@ const Jobs = () => {
     const handleApply = async (e) => {
         e.preventDefault();
         
+        console.log(" handleApply ");
+
         // Check if user is logged in
         if (!userInfo) {
             alert("Please login to apply for jobs.");
@@ -56,6 +58,8 @@ const Jobs = () => {
         formData.append('resume', resumeFile);
 
         try {
+            console.log(" handleApply try block ");
+
             const config = {
                 headers: {
                     'Content-Type': 'multipart/form-data',

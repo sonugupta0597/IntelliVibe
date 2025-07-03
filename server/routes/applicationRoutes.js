@@ -13,7 +13,8 @@ const {
     getApplicantsForJob,
     getMyCandidateApplications,
     getQuizForApplication,
-    submitQuizAnswers
+    submitQuizAnswers,
+    updateApplicationStatus
 } = require('../controllers/applicationController');
 
 // Add these routes:
@@ -67,7 +68,7 @@ router.get('/job/:jobId', protect, employer, getApplicantsForJob);
 // router.get('/job/:jobId/stats', protect, employer, getApplicationStats);
 
 // PUT route to update application status (if you have this controller function)
-// router.put('/:applicationId/status', protect, employer, updateApplicationStatus);
+router.put('/:applicationId/status', protect, employer, updateApplicationStatus);
 
 // PUT route for bulk updates (if you have this controller function)
 // router.put('/bulk-update', protect, employer, bulkUpdateApplications);
