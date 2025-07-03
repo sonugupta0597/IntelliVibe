@@ -38,8 +38,10 @@ const QuizPage = () => {
     
     // Fetch quiz data
     useEffect(() => {
-        fetchQuiz();
-    }, [applicationId]);
+        if (userInfo) {
+            fetchQuiz();
+        }
+    }, [applicationId,userInfo]);
 
     // Timer effect
     useEffect(() => {

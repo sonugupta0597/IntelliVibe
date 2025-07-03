@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const { protect, employer } = require('../middleware/authMiddleware');
+//const upload = require('../middleware/uploadMiddleware');
 
 // Import all controller functions
 // Add these to your applicationRoutes.js
@@ -14,11 +15,13 @@ const {
     getMyCandidateApplications,
     getQuizForApplication,
     submitQuizAnswers,
-    updateApplicationStatus
+    updateApplicationStatus,
+    getApplicationQuiz,
+    submitApplicationQuiz
 } = require('../controllers/applicationController');
 
-// Add these routes:
 
+router.get('/:id/quiz', protect, getApplicationQuiz);
 // GET quiz for a specific application
 router.get('/:applicationId/quiz', protect, getQuizForApplication);
 
@@ -80,4 +83,9 @@ router.put('/:applicationId/status', protect, employer, updateApplicationStatus)
 // Add this route for candidates to view their applications
 router.get('/my-applications', protect, getMyCandidateApplications);
 
+
+// @route   POST /api/applications/:id/quiz/submit
+// @desc    Submit quiz answers and get results
+// @access  Private (Candidate)
+router.post('/:id/quiz/submit', protect, submitApplicationQuiz);
 module.exports = router;
