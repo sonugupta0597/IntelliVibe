@@ -63,6 +63,9 @@ exports.applyForJob = async (req, res) => {
         });
         await application.save();
 
+        // Send 'Thank you for applying' email
+        await sendApplicationEmail(application, 'application_received');
+
         // Perform AI analysis asynchronously but wait for result
         try {
             // Parse PDF
@@ -70,6 +73,12 @@ exports.applyForJob = async (req, res) => {
             const dataBuffer = await fs.readFile(pdfPath);
             const pdfData = await pdfParse(dataBuffer);
             const resumeText = pdfData.text;
+
+            // Extract skills from resume
+            const resumeSkills = extractSkillsFromResume(resumeText, job.skills);
+            // Analyze skills gap
+            const skillsGap = analyzeSkillsGap(resumeSkills, job.skills);
+            application.skillsGapAnalysis = skillsGap;
 
             // Analyze with AI
             const aiAnalysis = await analyzeResume(resumeText, {
@@ -81,6 +90,14 @@ exports.applyForJob = async (req, res) => {
                 jobType: job.jobType,
                 location: job.location,
             });
+
+            // Use AI's matchedSkills and missingSkills for skillsGapAnalysis
+            application.skillsGapAnalysis = {
+                matched: aiAnalysis.matchedSkills,
+                missing: aiAnalysis.missingSkills,
+                additional: [], // Optionally, you can add logic for additional skills
+                matchPercentage: aiAnalysis.matchScore
+            };
 
             console.log(" aiAnalysis ", aiAnalysis);
             // Update application with AI results
@@ -109,6 +126,12 @@ exports.applyForJob = async (req, res) => {
                         title: job.title,
                         skills: job.skills,
                         description: job.description,
+                    }, {
+                        difficultyDistribution: {
+                            easy: 3,
+                            medium: 4,
+                            hard: 3
+                        }
                     });
                     quiz = new Quiz({
                         job: jobId,
@@ -294,6 +317,12 @@ exports.bulkUpdateApplications = async (req, res) => {
             }
         );
 
+        // Send status update email to each candidate
+        const updatedApplications = await Application.find({ _id: { $in: applicationIds }, job: jobId });
+        for (const app of updatedApplications) {
+            await sendApplicationEmail(app, 'status_updated', { status });
+        }
+
         res.json({
             message: `${result.modifiedCount} applications updated successfully`,
             modifiedCount: result.modifiedCount,
@@ -410,6 +439,9 @@ exports.updateApplicationStatus = async (req, res) => {
         application.status = status;
         await application.save();
 
+        // Send status update email
+        await sendApplicationEmail(application, 'status_updated', { status });
+
         res.json({
             message: 'Application status updated successfully',
             application: application,
@@ -425,6 +457,7 @@ exports.getMyCandidateApplications = async (req, res) => {
     try {
         const applications = await Application.find({ candidate: req.user._id })
             .populate('job', 'title companyName location skills')
+            .select('aiMatchScore aiJustification aiAnalysisDate skillsGapAnalysis status screeningStage createdAt updatedAt')
             .sort({ createdAt: -1 });
 
         res.json(applications);

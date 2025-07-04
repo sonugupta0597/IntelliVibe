@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 // Updated Zod schema to match your backend model
 const formSchema = z.object({
@@ -119,7 +118,7 @@ const PostJobForm = ({ onJobPosted }) => {
             const payload = {
                 title: values.title,
                 companyName: values.companyName,
-                skills: values.skills,
+                skills: values.skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0),
                 location: values.location,
             };
             const { data } = await axios.post('http://localhost:5001/api/ai/generate-job-description', payload, userInfo?.token ? { headers: { Authorization: `Bearer ${userInfo.token}` } } : {});
@@ -129,6 +128,7 @@ const PostJobForm = ({ onJobPosted }) => {
                 setApiError('AI did not return a description.');
             }
         } catch (error) {
+            console.error('Error generating description:', error);
             setApiError('Failed to generate description.');
         } finally {
             setIsGenerating(false);
@@ -136,12 +136,9 @@ const PostJobForm = ({ onJobPosted }) => {
     };
 
     return (
-        <motion.div 
+        <div 
             style={{ maxHeight: '80vh', overflowY: 'auto' }}
             className="glass-panel p-8 shadow-xl"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
         >
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -355,7 +352,7 @@ const PostJobForm = ({ onJobPosted }) => {
                     </div>
                 </form>
             </Form>
-        </motion.div>
+        </div>
     );
 };
 

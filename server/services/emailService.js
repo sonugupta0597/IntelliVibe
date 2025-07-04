@@ -188,6 +188,32 @@ const emailTemplates = {
                 <p>Best of luck,<br>The IntelliVibe Team</p>
             </div>
         `
+    }),
+
+    application_received: (data) => ({
+        subject: `Application Received - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Thank You for Applying!</h2>
+                <p>Dear ${data.candidate.firstName},</p>
+                <p>We have received your application for the <strong>${data.job.title}</strong> position at <strong>${data.job.companyName}</strong>.</p>
+                <p>Our team will review your application and get back to you soon. You can track your application status in your candidate dashboard.</p>
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    status_updated: (data) => ({
+        subject: `Application Status Updated - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Application Status Update</h2>
+                <p>Dear ${data.candidate.firstName},</p>
+                <p>Your application for the <strong>${data.job.title}</strong> position at <strong>${data.job.companyName}</strong> has been updated to: <strong>${data.status}</strong>.</p>
+                <p>You can view more details in your candidate dashboard.</p>
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
     })
 };
 
@@ -202,34 +228,42 @@ exports.sendApplicationEmail = async (application, template, additionalData = {}
             .populate('job', 'title companyName');
 
         if (!populatedApp) {
-            throw new Error('Application not found');
+            console.error('Application not found for email sending:', application._id);
+            return;
         }
 
-        const emailTemplate = emailTemplates[template];
-        if (!emailTemplate) {
-            throw new Error(`Email template '${template}' not found`);
+        const templateFunction = emailTemplates[template];
+        if (!templateFunction) {
+            console.error(`Email template '${template}' not found`);
+            return;
         }
 
-        // Merge application data with additional data
         const emailData = {
             ...populatedApp.toObject(),
             ...additionalData
         };
 
-        const { subject, html } = emailTemplate(emailData);
+        const emailContent = templateFunction(emailData);
 
         await transporter.sendMail({
             from: `"IntelliVibe" <${process.env.EMAIL_USER}>`,
             to: populatedApp.candidate.email,
-            subject: subject,
-            html: html,
+            subject: emailContent.subject,
+            html: emailContent.html,
         });
 
-        console.log(`Email sent: ${template} to ${populatedApp.candidate.email}`);
-        return true;
+        console.log(`Email sent to ${populatedApp.candidate.email} for application ${application._id}`);
     } catch (error) {
         console.error('Error sending email:', error);
-        // Don't throw - email failure shouldn't break the application flow
-        return false;
+        
+        // Log specific authentication errors
+        if (error.code === 'EAUTH') {
+            console.error('Email authentication failed. Please check EMAIL_USER and EMAIL_PASS environment variables.');
+            console.error('For Gmail, you may need to use an App Password instead of your regular password.');
+        }
+        
+        // Don't throw - email failure shouldn't break the application process
+        // But log it for debugging
+        console.log(`Email sending failed for application ${application._id}, but application process continues.`);
     }
 };

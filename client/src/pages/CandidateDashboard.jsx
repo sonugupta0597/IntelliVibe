@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { motion } from 'framer-motion';
 import { 
     Briefcase, 
     Clock, 
@@ -135,7 +134,7 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* AI Score Section */}
-                {application.aiMatchScore !== null && (
+                {application.aiMatchScore !== null && application.aiMatchScore !== undefined ? (
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">AI Match Score</span>
@@ -156,6 +155,20 @@ const CandidateDashboard = () => {
                             </p>
                         )}
                     </div>
+                ) : (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">AI Match Score</span>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                    Pending
+                                </Badge>
+                            </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            AI analysis is being processed...
+                        </p>
+                    </div>
                 )}
 
                 {/* Skills Gap Analysis */}
@@ -170,6 +183,26 @@ const CandidateDashboard = () => {
                                 ✗ {application.skillsGapAnalysis.missing?.length || 0} skills missing
                             </div>
                         </div>
+                        {/* Show matched skills as badges */}
+                        {application.skillsGapAnalysis.matched && application.skillsGapAnalysis.matched.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                                {application.skillsGapAnalysis.matched.map((skill, idx) => (
+                                    <span key={idx} className="bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-xs border border-green-300">
+                                        {skill}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        {/* Show missing skills as badges */}
+                        {application.skillsGapAnalysis.missing && application.skillsGapAnalysis.missing.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                                {application.skillsGapAnalysis.missing.map((skill, idx) => (
+                                    <span key={idx} className="bg-red-100 text-red-700 rounded-full px-2 py-0.5 text-xs border border-red-300">
+                                        {skill}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -227,12 +260,7 @@ const CandidateDashboard = () => {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-6"
-        >
+        <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold">My Applications</h1>
                 <p className="text-muted-foreground mt-2">Track and manage your job applications</p>
@@ -361,7 +389,7 @@ const CandidateDashboard = () => {
                     </CardContent>
                 </Card>
             )}
-        </motion.div>
+        </div>
     );
 };
 
