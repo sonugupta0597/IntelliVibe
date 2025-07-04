@@ -220,25 +220,60 @@ const CandidateDashboard = () => {
                 </div>
 
                 {/* Status-specific messages */}
-                {application.status === 'shortlisted' && (
-                    <Alert className="mt-3">
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertTitle>Congratulations!</AlertTitle>
-                        <AlertDescription>
-                            You've been shortlisted! Expect to hear from the employer soon.
-                        </AlertDescription>
-                    </Alert>
-                )}
+                {/* --- START OF CHANGES --- */}
+            {/* This block replaces the old status-specific messages */}
 
-                {application.status === 'rejected' && application.aiMatchScore < 50 && (
-                    <Alert className="mt-3" variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Application Unsuccessful</AlertTitle>
-                        <AlertDescription>
-                            Consider improving your skills in: {application.skillsGapAnalysis?.missing?.slice(0, 3).join(', ')}
-                        </AlertDescription>
-                    </Alert>
-                )}
+            {/* If the candidate is eligible for the quiz, show this actionable alert */}
+            {application.screeningStage === 'quiz_pending' && (
+                <Alert className="mt-4 border-blue-200 bg-blue-50">
+                    <AlertCircle className="h-4 w-4 text-blue-600" />
+                    <AlertTitle className="text-blue-800">Next Step: Skills Assessment</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>You've qualified for the skills assessment. Good luck!</span>
+                        <Button asChild size="sm">
+                            <Link to={`/candidate/quiz/${application._id}`}>
+                                Start Quiz
+                                <ExternalLink className="ml-2 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* If they passed the quiz and are waiting for the next step */}
+            {['video_pending', 'final_review', 'hired'].includes(application.screeningStage) && (
+                 <Alert className="mt-4 border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-800">Congratulations!</AlertTitle>
+                    <AlertDescription>
+                        You've passed the quiz. The employer will be in touch about the next steps.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* If they failed the quiz */}
+            {application.screeningStage === 'quiz_failed' && (
+                <Alert className="mt-4" variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Quiz Completed</AlertTitle>
+                    <AlertDescription>
+                        Your score of {application.quizScore}% did not meet the passing threshold.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* If they were rejected at the resume stage */}
+            {application.screeningStage === 'resume_rejected' && (
+                 <Alert className="mt-4" variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Application Unsuccessful</AlertTitle>
+                    <AlertDescription>
+                        Your profile did not meet the minimum requirements for this position.
+                    </AlertDescription>
+                </Alert>
+            )}
+            
+            {/* --- END OF CHANGES --- */}
             </CardContent>
         </Card>
     );
