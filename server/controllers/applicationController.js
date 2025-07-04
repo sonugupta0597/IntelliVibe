@@ -8,7 +8,6 @@ const Quiz = require('../models/Quiz');
 const { sendApplicationEmail } = require('../services/emailService');
 
 const { analyzeResume, generateQuizQuestions } = require('../services/aiService'); // Correctly imported
-
 // @desc    Apply for a job
 // @route   POST /api/applications
 // @access  Private/Candidate
@@ -122,17 +121,17 @@ exports.applyForJob = async (req, res) => {
                 // Generate quiz if it doesn't exist for this job
                 let quiz = await Quiz.findOne({ job: jobId });
                 if (!quiz) {
+                       // 1. Create a default quiz config object from your model.
+                       const defaultQuizConfig = new Quiz();
+
                     const questions = await generateQuizQuestions({
                         title: job.title,
                         skills: job.skills,
                         description: job.description,
-                    }, {
-                        difficultyDistribution: {
-                            easy: 3,
-                            medium: 4,
-                            hard: 3
-                        }
-                    });
+                    },  { // Second argument: Quiz Config
+                        difficultyDistribution: defaultQuizConfig.difficultyDistribution
+                    }
+                );
                     quiz = new Quiz({
                         job: jobId,
                         questions: questions,
@@ -401,9 +400,52 @@ exports.getApplicationStats = async (req, res) => {
     }
 };
 
-// ... keep existing updateApplicationStatus and downloadResume functions ...
 
+exports.getApplicationQuiz = async (req, res) => {
+    try {
+        const application = await Application.findById(req.params.id);
 
+        // Security checks
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found.' });
+        }
+        if (application.candidate.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'You are not authorized to view this quiz.' });
+        }
+        if (application.screeningStage !== 'quiz_pending' && application.screeningStage !== 'quiz_in_progress') {
+            return res.status(400).json({ message: 'Quiz is not available for this application.' });
+        }
+
+        // Fetch the quiz, but exclude correct answers from the payload
+        const quiz = await Quiz.findOne({ job: application.job })
+            .populate('job', 'title companyName')
+            .select('questions.question questions.options questions._id timeLimit');
+        
+        if (!quiz) {
+            return res.status(500).json({ message: 'Could not find the quiz for this job.' });
+        }
+
+        // Mark quiz as started if it's the first time
+        if (application.screeningStage === 'quiz_pending') {
+            application.screeningStage = 'quiz_in_progress';
+            application.quizStartedAt = new Date();
+            application.quizAttempts = (application.quizAttempts || 0) + 1;
+            await application.save();
+        }
+
+        res.json({
+            applicationId: application._id,
+            jobTitle: quiz.job.title,
+            companyName: quiz.job.companyName,
+            timeLimit: quiz.timeLimit,
+            questions: quiz.questions
+        });
+
+    } catch (error) {
+        console.error("Error fetching quiz data:", error);
+        res.status(500).json({ message: "Server error while fetching quiz." });
+    }
+};
 
 
 
@@ -636,5 +678,108 @@ exports.submitQuizAnswers = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+
+/**
+ * POST /api/applications/:id/quiz/submit
+ * Submits quiz answers, calculates score, and updates application status.
+ */
+exports.submitApplicationQuiz = async (req, res) => {
+    try {
+        const { id: applicationId } = req.params;
+        const { answers } = req.body; // Expecting an array: [{ questionId: '...', selectedAnswer: 1 }]
+
+        // 1. Find the Application and perform security checks
+        const application = await Application.findById(applicationId);
+
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found.' });
+        }
+        if (application.candidate.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'You are not authorized to submit this quiz.' });
+        }
+        if (application.screeningStage !== 'quiz_in_progress') {
+            return res.status(400).json({ message: 'Quiz is not active or has already been submitted.' });
+        }
+
+        // 2. Find the corresponding Quiz to get the correct answers
+        const quiz = await Quiz.findOne({ job: application.job });
+        if (!quiz) {
+            return res.status(404).json({ message: 'Quiz data not found for this job application.' });
+        }
+
+        // 3. Score the submission
+        let correctAnswersCount = 0;
+        const quizResultsForDB = []; // To store detailed results in the Application document
+
+        // Loop over the questions from the database (the source of truth)
+        quiz.questions.forEach(dbQuestion => {
+            // Find the user's answer for the current question
+            const userAnswer = answers.find(a => a.questionId === dbQuestion._id.toString());
+            const isCorrect = userAnswer && userAnswer.selectedAnswer === dbQuestion.correctAnswer;
+
+            if (isCorrect) {
+                correctAnswersCount++;
+            }
+
+            // Store detailed result for this question
+            quizResultsForDB.push({
+                questionId: dbQuestion._id,
+                userAnswer: userAnswer ? userAnswer.selectedAnswer : null, // Store what the user selected
+                correctAnswer: dbQuestion.correctAnswer,
+                isCorrect: isCorrect,
+            });
+        });
+
+        const finalScore = Math.round((correctAnswersCount / quiz.questions.length) * 100);
+
+        // 4. Update the Application document with results
+        application.quizScore = finalScore;
+        application.quizResults = quizResultsForDB;
+        application.quizCompletedAt = new Date();
+
+        const passed = finalScore >= quiz.passingScore;
+        let resultMessage;
+        let nextStepMessage = null;
+
+        // 5. Update the application's stage based on pass/fail
+        if (passed) {
+            application.screeningStage = 'video_pending'; // Or 'final_review' if no video step
+            application.stageHistory.push({
+                stage: 'quiz_completed',
+                status: 'passed',
+                score: finalScore,
+                notes: `Qualified for the next stage with a score of ${finalScore}%.`
+            });
+            resultMessage = "You've successfully passed the skills assessment!";
+            nextStepMessage = "The hiring team has been notified. They will be in touch regarding the next steps in the process.";
+        } else {
+            application.screeningStage = 'quiz_failed';
+            application.status = 'rejected'; // The application journey ends here
+            application.stageHistory.push({
+                stage: 'quiz_completed',
+                status: 'failed',
+                score: finalScore,
+                notes: `Did not meet the passing score of ${quiz.passingScore}%.`
+            });
+            resultMessage = "Thank you for completing the assessment. Unfortunately, your score did not meet the threshold for this position.";
+        }
+
+        await application.save();
+
+        // 6. Send a detailed response back to the frontend
+        res.status(200).json({
+            message: 'Quiz submitted successfully!',
+            score: finalScore,
+            passingScore: quiz.passingScore,
+            passed: passed,
+            nextStep: nextStepMessage ? { message: nextStepMessage } : null,
+        });
+
+    } catch (error) {
+        console.error('Error submitting quiz:', error);
+        res.status(500).json({ message: 'An error occurred while submitting your quiz.' });
     }
 };

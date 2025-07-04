@@ -1,9 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-
-// Layout Component
 import Header from './components/layout/Header';
-
-// Page Components
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -11,7 +7,7 @@ import Jobs from './pages/Jobs'; // <-- The new public jobs page
 import EmployerDashboard from './pages/EmployerDashboard'; // <-- The new protected employer page
 import CandidateDashboard from './pages/CandidateDashboard'; // <-- Add a placeholder for this too
 import QuizPage from './pages/QuizPage';
-
+import { Toaster } from 'sonner'; 
 // Auth Component
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ApplicantsPage from './pages/ApplicantsPage';
@@ -28,21 +24,6 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/jobs" element={<Jobs />} />
-          <Route path="/candidate/quiz/:applicationId" element={
-            <ProtectedRoute role="candidate">
-                <QuizPage />
-            </ProtectedRoute>
-          } />
-
-          {/* --- PROTECTED EMPLOYER ROUTES --- */}
-          {/* These routes can only be accessed by logged-in users with the 'employer' role */}
-          <Route element={<ProtectedRoute requiredRole="employer" />}>
-            <Route path="/employer/dashboard" element={<EmployerDashboard />} />
-            {/* You can add more employer-only routes here later */}
-            {/* e.g., <Route path="/employer/job/:id/applicants" element={<ApplicantsPage />} /> */}
-          </Route>
-
-
           {/* --- PROTECTED CANDIDATE ROUTES --- */}
           {/* These routes can only be accessed by logged-in users with the 'candidate' role */}
           <Route element={<ProtectedRoute requiredRole="candidate" />}>
@@ -51,10 +32,6 @@ function App() {
              {/* e.g., <Route path="/candidate/applications" element={<MyApplications />} /> */}
           </Route>
 
-
-          {/* --- CATCH-ALL ROUTE (Optional) --- */}
-          {/* This can be a 404 Not Found page */}
-          {/* <Route path="*" element={<NotFound />} /> */}
                     {/* --- PROTECTED EMPLOYER ROUTES --- */}
           <Route element={<ProtectedRoute requiredRole="employer" />}>
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
@@ -65,6 +42,7 @@ function App() {
 
         </Routes>
       </main>
+      <Toaster richColors position="top-right" /> 
     </div>
   );
 }
