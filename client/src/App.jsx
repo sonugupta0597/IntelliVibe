@@ -11,7 +11,7 @@ import { Toaster } from 'sonner';
 // Auth Component
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ApplicantsPage from './pages/ApplicantsPage';
-
+import VideoInterviewPage from './pages/VideoInterviewPage';
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -30,12 +30,12 @@ function App() {
              <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
              <Route path="/candidate/quiz/:applicationId" element={<QuizPage />} />
              {/* e.g., <Route path="/candidate/applications" element={<MyApplications />} /> */}
+             <Route path="/candidate/interview/:applicationId" element={<VideoInterviewPage />} />
           </Route>
 
                     {/* --- PROTECTED EMPLOYER ROUTES --- */}
           <Route element={<ProtectedRoute requiredRole="employer" />}>
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
-            {/* ADD THIS NEW ROUTE */}
             <Route path="/employer/job/:jobId/applicants" element={<ApplicantsPage />} /> 
           </Route>
 
