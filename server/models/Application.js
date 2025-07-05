@@ -11,11 +11,17 @@ const stageHistorySchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['completed', 'passed', 'failed', 'in_progress'],
+        enum: ['completed', 'passed', 'failed', 'in_progress', 'scheduled'],
         required: true,
     },
     score: Number,
     notes: String,
+    scheduledDate: Date,
+    employerContact: {
+        name: String,
+        email: String,
+        phone: String,
+    },
 });
 
 const quizResultSchema = new mongoose.Schema({
@@ -47,11 +53,11 @@ const applicationSchema = new mongoose.Schema({
     // Overall status
     status: {
         type: String,
-        enum: ['pending', 'reviewed', 'shortlisted', 'rejected'],
+        enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'selected_for_employer', 'hired'],
         default: 'pending',
     },
     
-    // Screening stage tracking
+    // Screening stage tracking - Updated with new stages
     screeningStage: {
         type: String,
         enum: [
@@ -64,7 +70,11 @@ const applicationSchema = new mongoose.Schema({
             'video_pending',
             'video_in_progress',
             'video_completed',
+            'video_failed',
             'final_review',
+            'selected_for_employer',
+            'employer_scheduled',
+            'employer_interview_completed',
             'hired',
             'manual_review_needed'
         ],
@@ -146,6 +156,36 @@ const applicationSchema = new mongoose.Schema({
         redFlags: [String],
     },
     
+    // Employer scheduling fields
+    employerInterview: {
+        scheduledDate: Date,
+        scheduledTime: String,
+        interviewType: {
+            type: String,
+            enum: ['phone', 'video', 'onsite'],
+            default: 'video'
+        },
+        employerContact: {
+            name: String,
+            email: String,
+            phone: String,
+        },
+        meetingLink: String,
+        location: String,
+        notes: String,
+        status: {
+            type: String,
+            enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+            default: 'pending'
+        },
+        feedback: String,
+        decision: {
+            type: String,
+            enum: ['hired', 'rejected', 'pending'],
+            default: 'pending'
+        }
+    },
+    
     // Auto-processing flags
     autoProcessed: {
         type: Boolean,
@@ -165,6 +205,14 @@ const applicationSchema = new mongoose.Schema({
         resumeWeight: { type: Number, default: 40 },
         quizWeight: { type: Number, default: 30 },
         videoWeight: { type: Number, default: 30 },
+    },
+    
+    // Progress tracking
+    progressPercentage: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 0,
     },
     
 }, {
@@ -199,6 +247,140 @@ applicationSchema.methods.calculateOverallScore = function() {
     
     this.overallScore = totalWeight > 0 ? Math.round(weightedScore * 100 / totalWeight) : null;
     return this.overallScore;
+};
+
+// Calculate progress percentage based on screening stage
+applicationSchema.methods.calculateProgressPercentage = function() {
+    const stageProgress = {
+        'resume_uploaded': 10,
+        'resume_screening': 20,
+        'resume_rejected': 100, // End state
+        'quiz_pending': 30,
+        'quiz_in_progress': 40,
+        'quiz_failed': 100, // End state
+        'video_pending': 50,
+        'video_in_progress': 60,
+        'video_completed': 70,
+        'video_failed': 100, // End state
+        'final_review': 80,
+        'selected_for_employer': 85,
+        'employer_scheduled': 90,
+        'employer_interview_completed': 95,
+        'hired': 100,
+        'manual_review_needed': 25
+    };
+    
+    this.progressPercentage = stageProgress[this.screeningStage] || 0;
+    return this.progressPercentage;
+};
+
+// Get current stage information
+applicationSchema.methods.getCurrentStageInfo = function() {
+    const stageInfo = {
+        'resume_uploaded': {
+            title: 'Resume Uploaded',
+            description: 'Your resume has been uploaded and is being processed',
+            icon: '📄',
+            color: 'blue'
+        },
+        'resume_screening': {
+            title: 'AI Resume Analysis',
+            description: 'AI is analyzing your resume against job requirements',
+            icon: '🤖',
+            color: 'blue'
+        },
+        'resume_rejected': {
+            title: 'Resume Screening Failed',
+            description: 'Your resume did not meet the minimum requirements',
+            icon: '❌',
+            color: 'red'
+        },
+        'quiz_pending': {
+            title: 'Skills Assessment Pending',
+            description: 'You qualify for the technical skills assessment',
+            icon: '📝',
+            color: 'green'
+        },
+        'quiz_in_progress': {
+            title: 'Skills Assessment in Progress',
+            description: 'Complete the technical skills assessment',
+            icon: '⏳',
+            color: 'yellow'
+        },
+        'quiz_failed': {
+            title: 'Skills Assessment Failed',
+            description: 'You did not pass the technical skills assessment',
+            icon: '❌',
+            color: 'red'
+        },
+        'video_pending': {
+            title: 'Video Interview Pending',
+            description: 'You qualify for the AI-powered video interview',
+            icon: '🎥',
+            color: 'green'
+        },
+        'video_in_progress': {
+            title: 'Video Interview in Progress',
+            description: 'Complete the AI-powered video interview',
+            icon: '⏳',
+            color: 'yellow'
+        },
+        'video_completed': {
+            title: 'Video Interview Completed',
+            description: 'Your video interview has been analyzed',
+            icon: '✅',
+            color: 'green'
+        },
+        'video_failed': {
+            title: 'Video Interview Failed',
+            description: 'You did not pass the video interview',
+            icon: '❌',
+            color: 'red'
+        },
+        'final_review': {
+            title: 'Final Review',
+            description: 'Your application is under final review',
+            icon: '🔍',
+            color: 'blue'
+        },
+        'selected_for_employer': {
+            title: 'Selected for Employer Interview',
+            description: 'Congratulations! You\'ve been selected for the final interview',
+            icon: '🎉',
+            color: 'green'
+        },
+        'employer_scheduled': {
+            title: 'Employer Interview Scheduled',
+            description: 'Your interview with the employer has been scheduled',
+            icon: '📅',
+            color: 'green'
+        },
+        'employer_interview_completed': {
+            title: 'Employer Interview Completed',
+            description: 'Your interview with the employer has been completed',
+            icon: '✅',
+            color: 'blue'
+        },
+        'hired': {
+            title: 'Hired',
+            description: 'Congratulations! You have been hired',
+            icon: '🎊',
+            color: 'green'
+        },
+        'manual_review_needed': {
+            title: 'Manual Review Required',
+            description: 'Your application requires manual review',
+            icon: '👤',
+            color: 'orange'
+        }
+    };
+    
+    return stageInfo[this.screeningStage] || {
+        title: 'Unknown Stage',
+        description: 'Application status is unclear',
+        icon: '❓',
+        color: 'gray'
+    };
 };
 
 const Application = mongoose.model('Application', applicationSchema);
