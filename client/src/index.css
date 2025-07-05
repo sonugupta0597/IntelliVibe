@@ -9,10 +9,22 @@
     --border: 214.3 31.8% 91.4%;
     /* ...all your other shadcn/ui variables... */
     --radius: 0.5rem;
+    --glass-bg: hsla(0,0%,100%,0.7);
+    --glass-blur: 16px;
+    --glass-border: hsla(0,0%,100%,0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+    --anim-gradient: linear-gradient(270deg, #e0e7ff, #f0abfc, #a5b4fc, #f472b6, #818cf8, #f9fafb);
   }
 
   .dark {
-    /* ...dark theme variables... */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --glass-bg: hsla(222, 47%, 11%, 0.6);
+    --glass-blur: 18px;
+    --glass-border: hsla(222, 47%, 11%, 0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(0,0,0,0.28);
+    --anim-gradient: linear-gradient(270deg, #1e293b, #6366f1, #a21caf, #0ea5e9, #818cf8, #0f172a);
   }
 
   * {
@@ -20,7 +32,35 @@
   }
   
   body {
+    background: var(--anim-gradient);
+    background-size: 400% 400%;
+    animation: gradientBG 16s ease infinite;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+
+  @keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    border: 1.5px solid var(--glass-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    transition: box-shadow 0.3s, background 0.3s;
+  }
+  .glass-panel:hover {
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.22);
+    background: hsla(0,0%,100%,0.85);
+  }
+  .dark .glass-panel:hover {
+    background: hsla(222, 47%, 11%, 0.8);
   }
 }

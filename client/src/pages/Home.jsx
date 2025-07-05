@@ -55,7 +55,7 @@ const Home = () => {
     >
       {/* Hero Section */}
       <motion.section
-        className="text-center pt-12 md:pt-20"
+        className="text-center pt-12 md:pt-20 glass-panel mx-auto max-w-3xl shadow-lg"
         variants={itemVariants}
       >
         <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">
@@ -80,24 +80,25 @@ const Home = () => {
         <h2 className="text-3xl font-bold text-center mb-10">Why Choose Our Platform?</h2>
         <div className="grid gap-8 md:grid-cols-3">
           {features.map((feature, index) => (
-            <Card key={index} className="text-center">
-              <CardHeader>
-                <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                  {feature.icon}
-                </div>
-                <CardTitle className="pt-4">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </CardContent>
-            </Card>
+            <motion.div
+              key={index}
+              className="glass-panel text-center p-6 shadow-md hover:scale-105 transition-transform duration-300"
+              whileHover={{ scale: 1.07, boxShadow: '0 12px 40px 0 rgba(31, 38, 135, 0.22)' }}
+              variants={itemVariants}
+            >
+              <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-2">
+                {feature.icon}
+              </div>
+              <div className="pt-2 text-xl font-semibold">{feature.title}</div>
+              <p className="text-muted-foreground mt-2">{feature.description}</p>
+            </motion.div>
           ))}
         </div>
       </motion.section>
 
       {/* Final Call to Action */}
       <motion.section 
-        className="text-center bg-secondary p-12 rounded-lg"
+        className="text-center glass-panel p-12 rounded-lg shadow-lg mx-auto max-w-2xl"
         variants={itemVariants}
       >
         <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
