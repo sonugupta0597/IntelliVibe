@@ -5,6 +5,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { User, LogOut } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Header = () => {
     const { userInfo, logout } = useAuth();
@@ -38,7 +39,12 @@ const Header = () => {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <motion.header 
+            className="sticky top-0 z-50 w-full border-b glass-panel backdrop-blur supports-[backdrop-filter]:bg-background/60"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+        >
             <div className="container h-14 flex items-center">
                 <Link to="/" className="mr-6 flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.2 19 8.9 19 7c0-2.2-1.8-4-4-4S11 4.8 11 7c0 1.9 1.3 3.2 2.5 4.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
@@ -83,7 +89,7 @@ const Header = () => {
                     <ThemeToggle />
                 </div>
             </div>
-        </header>
+        </motion.header>
     );
 };
 
