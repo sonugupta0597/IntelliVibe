@@ -1,7 +1,7 @@
 // File: server/services/videoAiService.js
-
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -48,6 +48,8 @@ const generateInitialQuestion = async (jobDetails, resumeText) => {
   }
 };
 
+// ... (keep the existing getGenerativeModel and generateInitialQuestion functions)
+
 /**
  * Generates a follow-up question based on the conversation history.
  * @param {Array<Object>} transcriptHistory - An array of objects, e.g., [{ speaker: 'AI', text: '...' }, { speaker: 'Candidate', text: '...' }]
@@ -55,7 +57,6 @@ const generateInitialQuestion = async (jobDetails, resumeText) => {
  * @returns {Promise<string>} A single, relevant follow-up question.
  */
 const generateFollowUpQuestion = async (transcriptHistory, jobDetails) => {
-    // Convert transcript array to a readable string format
     const conversation = transcriptHistory.map(turn => `${turn.speaker}: ${turn.text}`).join('\n');
 
     const prompt = `
@@ -72,23 +73,23 @@ const generateFollowUpQuestion = async (transcriptHistory, jobDetails) => {
         Based on the candidate's LAST answer, ask ONE relevant follow-up question.
         - If their answer was strong, probe deeper into a technical aspect they mentioned.
         - If their answer was weak or vague, ask a clarifying question to help them elaborate.
-        - If they seem to be straying off-topic, gently guide them back towards the required skills.
-        - Do NOT repeat a question that has already been asked.
-        - Keep the question concise.
-
-        Example: "That's interesting. You mentioned using AES-256. What was your reasoning for choosing that specific encryption standard over others?"
+        - Do NOT repeat a question that has already been asked. Keep the question concise.
 
         Your response must be only the question text, without any preamble.
     `;
     
     try {
         const result = await model.generateContent(prompt);
-        const response = result.response;
-        return response.text();
+        return result.response.text();
     } catch (error) {
         console.error("Error generating follow-up question:", error);
-        return "Thanks for sharing. Can you tell me more about the technologies you used in that situation?";
+        return "Thank you for that explanation. Can you elaborate on the specific technologies you used?";
     }
+};
+
+module.exports = {
+  generateInitialQuestion,
+  generateFollowUpQuestion, // <-- Export the new function
 };
 
 module.exports = {
