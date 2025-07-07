@@ -17,7 +17,10 @@ const {
     submitQuizAnswers,
     updateApplicationStatus,
     getApplicationQuiz,
-    submitApplicationQuiz
+    submitApplicationQuiz,
+    completeVideoInterview,
+    scheduleEmployerInterview,
+    completeEmployerInterview
 } = require('../controllers/applicationController');
 
 
@@ -88,4 +91,20 @@ router.get('/my-applications', protect, getMyCandidateApplications);
 // @desc    Submit quiz answers and get results
 // @access  Private (Candidate)
 router.post('/:id/quiz/submit', protect, submitApplicationQuiz);
+
+// @route   POST /api/applications/:id/video-complete
+// @desc    Complete video interview and process results
+// @access  Private (Candidate)
+router.post('/:id/video-complete', protect, completeVideoInterview);
+
+// @route   POST /api/applications/:id/schedule-employer-interview
+// @desc    Schedule employer interview
+// @access  Private (Employer)
+router.post('/:id/schedule-employer-interview', protect, employer, scheduleEmployerInterview);
+
+// @route   POST /api/applications/:id/complete-employer-interview
+// @desc    Complete employer interview and update status
+// @access  Private (Employer)
+router.post('/:id/complete-employer-interview', protect, employer, completeEmployerInterview);
+
 module.exports = router;

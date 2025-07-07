@@ -188,6 +188,153 @@ const emailTemplates = {
                 <p>Best of luck,<br>The IntelliVibe Team</p>
             </div>
         `
+    }),
+
+    selected_for_employer: (data) => ({
+        subject: `🎉 Congratulations! You've Been Selected for Final Interview - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #059669;">🎉 Outstanding Achievement!</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Congratulations! You have successfully completed all automated screening stages and 
+                have been <strong>selected for the final interview</strong> with the employer for the 
+                <strong>${data.job.title}</strong> position at <strong>${data.job.companyName}</strong>.</p>
+                
+                <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+                    <h3 style="margin-top: 0; color: #059669;">Your Complete Screening Results</h3>
+                    <p>✅ <strong>Resume Analysis:</strong> ${data.aiMatchScore}%</p>
+                    <p>✅ <strong>Skills Assessment:</strong> ${data.quizScore}%</p>
+                    <p>✅ <strong>Video Interview:</strong> ${data.videoAnalysisReport?.overallScore || 'N/A'}%</p>
+                    <p>🎯 <strong>Overall Score:</strong> ${data.overallScore}%</p>
+                </div>
+                
+                <h3>What Happens Next?</h3>
+                <p>The employer will be notified of your selection and will contact you shortly to 
+                schedule the final interview. This interview will be conducted directly by the hiring team.</p>
+                
+                <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <h4 style="margin-top: 0;">📧 You will receive an email from the employer within 2-3 business days</h4>
+                    <p style="margin-bottom: 0;">They will provide you with:</p>
+                    <ul style="margin: 10px 0 0 0;">
+                        <li>Interview scheduling details</li>
+                        <li>Contact information</li>
+                        <li>Any specific preparation requirements</li>
+                    </ul>
+                </div>
+                
+                <p><strong>Important:</strong> Please check your email regularly and respond promptly 
+                to the employer's scheduling request.</p>
+                
+                <p>This is a significant achievement - you've successfully navigated our comprehensive 
+                screening process and demonstrated the skills and qualities the employer is looking for!</p>
+                
+                <p>Best of luck with your final interview!<br>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    employer_interview_scheduled: (data) => ({
+        subject: `📅 Employer Interview Scheduled - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Interview Scheduled Successfully!</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Great news! Your interview with <strong>${data.job.companyName}</strong> for the 
+                <strong>${data.job.title}</strong> position has been scheduled.</p>
+                
+                <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Interview Details</h3>
+                    <p><strong>Date:</strong> ${new Date(data.scheduledDate).toLocaleDateString()}</p>
+                    <p><strong>Time:</strong> ${data.scheduledTime}</p>
+                    <p><strong>Type:</strong> ${data.interviewType}</p>
+                    ${data.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${data.meetingLink}">${data.meetingLink}</a></p>` : ''}
+                    ${data.location ? `<p><strong>Location:</strong> ${data.location}</p>` : ''}
+                    <p><strong>Contact Person:</strong> ${data.employerContact.name}</p>
+                    <p><strong>Contact Email:</strong> ${data.employerContact.email}</p>
+                    ${data.employerContact.phone ? `<p><strong>Contact Phone:</strong> ${data.employerContact.phone}</p>` : ''}
+                </div>
+                
+                <h3>Preparation Tips</h3>
+                <ul>
+                    <li>Research the company thoroughly</li>
+                    <li>Review the job description and your application</li>
+                    <li>Prepare questions to ask the interviewer</li>
+                    <li>Dress professionally</li>
+                    <li>Test your technology if it's a video interview</li>
+                    <li>Arrive early or join the meeting 5 minutes before</li>
+                </ul>
+                
+                <p><strong>Good luck with your interview!</strong></p>
+                
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    hired: (data) => ({
+        subject: `🎊 Congratulations! You've Been Hired - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #059669;">🎊 Welcome to the Team!</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Congratulations! We are thrilled to inform you that you have been <strong>successfully hired</strong> 
+                for the <strong>${data.job.title}</strong> position at <strong>${data.job.companyName}</strong>!</p>
+                
+                <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+                    <h3 style="margin-top: 0; color: #059669;">Your Journey with Us</h3>
+                    <p>✅ Resume Screening</p>
+                    <p>✅ Skills Assessment</p>
+                    <p>✅ AI Video Interview</p>
+                    <p>✅ Employer Interview</p>
+                    <p>🎯 <strong>Final Result: HIRED!</strong></p>
+                </div>
+                
+                <p>The employer will contact you shortly with:</p>
+                <ul>
+                    <li>Official offer letter</li>
+                    <li>Onboarding details</li>
+                    <li>Start date and schedule</li>
+                    <li>Any additional paperwork required</li>
+                </ul>
+                
+                <p>We're excited to have you join the team and look forward to seeing your contributions!</p>
+                
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
+    }),
+
+    video_failed: (data) => ({
+        subject: `Video Interview Results - ${data.job.title}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #dc2626;">Video Interview Results</h2>
+                
+                <p>Dear ${data.candidate.firstName},</p>
+                
+                <p>Thank you for completing the video interview for the <strong>${data.job.title}</strong> 
+                position at <strong>${data.job.companyName}</strong>.</p>
+                
+                <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Interview Results</h3>
+                    <p><strong>Your Score:</strong> ${data.score}%</p>
+                    <p><strong>Feedback:</strong> ${data.feedback}</p>
+                </div>
+                
+                <p>Unfortunately, your video interview score did not meet the requirements for this position. 
+                We appreciate your interest and effort throughout the application process.</p>
+                
+                <p>We encourage you to continue developing your skills and apply for future opportunities.</p>
+                
+                <p>Best regards,<br>The IntelliVibe Team</p>
+            </div>
+        `
     })
 };
 
@@ -229,6 +376,125 @@ exports.sendApplicationEmail = async (application, template, additionalData = {}
         return true;
     } catch (error) {
         console.error('Error sending email:', error);
+        // Don't throw - email failure shouldn't break the application flow
+        return false;
+    }
+};
+
+/**
+ * Send email notification to employer
+ */
+exports.sendEmployerNotification = async (application, notificationType, additionalData = {}) => {
+    try {
+        // Populate necessary fields
+        const populatedApp = await Application.findById(application._id)
+            .populate('candidate', 'firstName lastName email')
+            .populate('job', 'title companyName')
+            .populate('job', 'postedBy', 'firstName lastName email');
+
+        if (!populatedApp) {
+            throw new Error('Application not found');
+        }
+
+        let subject, html;
+
+        switch (notificationType) {
+            case 'candidate_selected':
+                subject = `🎯 Top Candidate Selected - ${populatedApp.job.title}`;
+                html = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #059669;">🎯 Excellent Candidate Selected!</h2>
+                        
+                        <p>Dear Hiring Manager,</p>
+                        
+                        <p>We're excited to inform you that we have identified a <strong>top candidate</strong> 
+                        for the <strong>${populatedApp.job.title}</strong> position at <strong>${populatedApp.job.companyName}</strong>.</p>
+                        
+                        <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin-top: 0;">Candidate Information</h3>
+                            <p><strong>Name:</strong> ${populatedApp.candidate.firstName} ${populatedApp.candidate.lastName}</p>
+                            <p><strong>Email:</strong> ${populatedApp.candidate.email}</p>
+                            <p><strong>Application ID:</strong> ${populatedApp._id}</p>
+                        </div>
+                        
+                        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin-top: 0;">Screening Results</h3>
+                            <p>✅ <strong>Resume Analysis:</strong> ${populatedApp.aiMatchScore}%</p>
+                            <p>✅ <strong>Skills Assessment:</strong> ${populatedApp.quizScore}%</p>
+                            <p>✅ <strong>Video Interview:</strong> ${populatedApp.videoAnalysisReport?.overallScore || 'N/A'}%</p>
+                            <p>🎯 <strong>Overall Score:</strong> ${populatedApp.overallScore}%</p>
+                        </div>
+                        
+                        <h3>Next Steps</h3>
+                        <p>This candidate has successfully completed all automated screening stages and 
+                        is ready for your final interview. Please contact them within 2-3 business days 
+                        to schedule the interview.</p>
+                        
+                        <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <h4 style="margin-top: 0;">📧 Contact Information</h4>
+                            <p><strong>Candidate Email:</strong> ${populatedApp.candidate.email}</p>
+                            <p><strong>Application ID:</strong> ${populatedApp._id}</p>
+                        </div>
+                        
+                        <p>You can view the complete application details in your employer dashboard.</p>
+                        
+                        <p>Best regards,<br>The IntelliVibe Team</p>
+                    </div>
+                `;
+                break;
+
+            case 'interview_scheduled':
+                subject = `📅 Interview Scheduled - ${populatedApp.job.title}`;
+                html = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #2563eb;">Interview Scheduled Successfully</h2>
+                        
+                        <p>Dear Hiring Manager,</p>
+                        
+                        <p>The interview with <strong>${populatedApp.candidate.firstName} ${populatedApp.candidate.lastName}</strong> 
+                        for the <strong>${populatedApp.job.title}</strong> position has been scheduled.</p>
+                        
+                        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin-top: 0;">Interview Details</h3>
+                            <p><strong>Date:</strong> ${new Date(additionalData.scheduledDate).toLocaleDateString()}</p>
+                            <p><strong>Time:</strong> ${additionalData.scheduledTime}</p>
+                            <p><strong>Type:</strong> ${additionalData.interviewType}</p>
+                            ${additionalData.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${additionalData.meetingLink}">${additionalData.meetingLink}</a></p>` : ''}
+                            ${additionalData.location ? `<p><strong>Location:</strong> ${additionalData.location}</p>` : ''}
+                        </div>
+                        
+                        <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <h4 style="margin-top: 0;">Candidate Information</h4>
+                            <p><strong>Name:</strong> ${populatedApp.candidate.firstName} ${populatedApp.candidate.lastName}</p>
+                            <p><strong>Email:</strong> ${populatedApp.candidate.email}</p>
+                            <p><strong>Application ID:</strong> ${populatedApp._id}</p>
+                        </div>
+                        
+                        <p>Please ensure you have all necessary materials ready for the interview.</p>
+                        
+                        <p>Best regards,<br>The IntelliVibe Team</p>
+                    </div>
+                `;
+                break;
+
+            default:
+                throw new Error(`Unknown notification type: ${notificationType}`);
+        }
+
+        // Send to employer (assuming the job poster is the employer)
+        const employerEmail = populatedApp.job.postedBy?.email || process.env.ADMIN_EMAIL;
+        
+        await transporter.sendMail({
+            from: `"IntelliVibe" <${process.env.EMAIL_USER}>`,
+            to: employerEmail,
+            subject: subject,
+            html: html,
+        });
+
+        console.log(`Employer notification sent: ${notificationType} to ${employerEmail}`);
+        return true;
+    } catch (error) {
+        console.error('Error sending employer notification:', error);
         // Don't throw - email failure shouldn't break the application flow
         return false;
     }

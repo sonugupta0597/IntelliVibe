@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { motion } from 'framer-motion';
+
 import { 
     Briefcase, 
     Clock, 
@@ -21,6 +21,7 @@ import {
     ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ApplicationProgressTracker from '@/components/ApplicationProgressTracker';
 
 const CandidateDashboard = () => {
     const [applications, setApplications] = useState([]);
@@ -186,6 +187,11 @@ const CandidateDashboard = () => {
                     </Button>
                 </div>
 
+                {/* Progress Tracker */}
+                <div className="mt-4">
+                    <ApplicationProgressTracker application={application} />
+                </div>
+
                 {/* Status-specific messages */}
                 {/* --- START OF CHANGES --- */}
             {/* This block replaces the old status-specific messages */}
@@ -262,12 +268,7 @@ const CandidateDashboard = () => {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-6"
-        >
+        <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold">My Applications</h1>
                 <p className="text-muted-foreground mt-2">Track and manage your job applications</p>
@@ -396,7 +397,7 @@ const CandidateDashboard = () => {
                     </CardContent>
                 </Card>
             )}
-        </motion.div>
+        </div>
     );
 };
 

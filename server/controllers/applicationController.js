@@ -5,7 +5,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { processApplicationScore, analyzeSkillsGap } = require('../services/autoQualificationService');
 const Quiz = require('../models/Quiz');
-const { sendApplicationEmail } = require('../services/emailService');
+const { sendApplicationEmail, sendEmployerNotification } = require('../services/emailService');
 
 const { analyzeResume, generateQuizQuestions } = require('../services/aiService'); // Correctly imported
 // @desc    Apply for a job
@@ -87,6 +87,9 @@ exports.applyForJob = async (req, res) => {
             application.aiJustification = aiAnalysis.justification;
             application.aiAnalysisDate = new Date();
 
+            // Calculate progress percentage
+            application.calculateProgressPercentage();
+
             // Determine next stage based on score
             const RESUME_THRESHOLD_FOR_QUIZ = 60; // Example threshold
             if (aiAnalysis.matchScore >= RESUME_THRESHOLD_FOR_QUIZ) {
@@ -159,6 +162,10 @@ exports.applyForJob = async (req, res) => {
                     score: aiAnalysis.matchScore,
                     notes: 'Did not meet minimum requirements'
                 });
+                
+                // Calculate progress percentage
+                application.calculateProgressPercentage();
+                
                 await application.save();
 
                 // Send rejection email with feedback
@@ -602,6 +609,9 @@ exports.submitQuizAnswers = async (req, res) => {
                 notes: 'Qualified for video interview'
             });
 
+            // Calculate progress percentage
+            application.calculateProgressPercentage();
+
             // Send video interview invitation
             await sendApplicationEmail(application, 'video_invitation');
 
@@ -616,7 +626,8 @@ exports.submitQuizAnswers = async (req, res) => {
                 nextStep: {
                     stage: 'video_interview',
                     message: 'You will receive an email invitation for the video interview stage.'
-                }
+                },
+                progressPercentage: application.progressPercentage
             });
 
         } else {
@@ -630,6 +641,9 @@ exports.submitQuizAnswers = async (req, res) => {
                 score: score,
                 notes: 'Did not meet passing score'
             });
+
+            // Calculate progress percentage
+            application.calculateProgressPercentage();
 
             await application.save();
 
@@ -645,7 +659,8 @@ exports.submitQuizAnswers = async (req, res) => {
                 score: score,
                 passingScore: quiz.passingScore,
                 message: 'Unfortunately, you did not pass the skills assessment.',
-                feedback: 'Consider improving your skills in the tested areas and apply for other positions.'
+                feedback: 'Consider improving your skills in the tested areas and apply for other positions.',
+                progressPercentage: application.progressPercentage
             });
         }
 
@@ -740,6 +755,9 @@ exports.submitApplicationQuiz = async (req, res) => {
             resultMessage = "Thank you for completing the assessment. Unfortunately, your score did not meet the threshold for this position.";
         }
 
+        // Calculate progress percentage
+        application.calculateProgressPercentage();
+
         await application.save();
 
         // 6. Send a detailed response back to the frontend
@@ -749,10 +767,237 @@ exports.submitApplicationQuiz = async (req, res) => {
             passingScore: quiz.passingScore,
             passed: passed,
             nextStep: nextStepMessage ? { message: nextStepMessage } : null,
+            progressPercentage: application.progressPercentage
         });
 
     } catch (error) {
         console.error('Error submitting quiz:', error);
         res.status(500).json({ message: 'An error occurred while submitting your quiz.' });
+    }
+};
+
+/**
+ * POST /api/applications/:id/video-complete
+ * Marks video interview as completed and processes results
+ */
+exports.completeVideoInterview = async (req, res) => {
+    try {
+        const { id: applicationId } = req.params;
+        const { videoAnalysisReport } = req.body;
+
+        const application = await Application.findById(applicationId);
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found.' });
+        }
+        if (application.candidate.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'You are not authorized to complete this interview.' });
+        }
+        if (application.screeningStage !== 'video_in_progress') {
+            return res.status(400).json({ message: 'Video interview is not active or has already been completed.' });
+        }
+
+        // Update application with video analysis results
+        application.videoAnalysisReport = videoAnalysisReport;
+        application.videoInterviewCompletedAt = new Date();
+        application.screeningStage = 'video_completed';
+        
+        // Calculate overall score
+        application.calculateOverallScore();
+        
+        // Determine if candidate qualifies for employer interview
+        const VIDEO_THRESHOLD = 70; // Minimum video interview score
+        const OVERALL_THRESHOLD = 75; // Minimum overall score
+        
+        if (videoAnalysisReport.overallScore >= VIDEO_THRESHOLD && application.overallScore >= OVERALL_THRESHOLD) {
+            // Qualify for employer interview
+            application.screeningStage = 'selected_for_employer';
+            application.status = 'selected_for_employer';
+            application.stageHistory.push({
+                stage: 'video_interview',
+                timestamp: new Date(),
+                status: 'passed',
+                score: videoAnalysisReport.overallScore,
+                notes: 'Qualified for employer interview'
+            });
+            
+            // Send selection email to candidate
+            await sendApplicationEmail(application, 'selected_for_employer');
+            
+            // Send notification to employer
+            await sendEmployerNotification(application, 'candidate_selected');
+            
+        } else {
+            // Failed video interview
+            application.screeningStage = 'video_failed';
+            application.status = 'rejected';
+            application.stageHistory.push({
+                stage: 'video_interview',
+                timestamp: new Date(),
+                status: 'failed',
+                score: videoAnalysisReport.overallScore,
+                notes: 'Did not meet video interview requirements'
+            });
+            
+            // Send rejection email
+            await sendApplicationEmail(application, 'video_failed', {
+                score: videoAnalysisReport.overallScore,
+                feedback: videoAnalysisReport.feedback
+            });
+        }
+
+        // Calculate progress percentage
+        application.calculateProgressPercentage();
+
+        await application.save();
+
+        res.json({
+            success: true,
+            message: 'Video interview completed successfully',
+            videoScore: videoAnalysisReport.overallScore,
+            overallScore: application.overallScore,
+            qualifiedForEmployer: application.screeningStage === 'selected_for_employer',
+            progressPercentage: application.progressPercentage
+        });
+
+    } catch (error) {
+        console.error('Error completing video interview:', error);
+        res.status(500).json({ message: 'An error occurred while completing the video interview.' });
+    }
+};
+
+/**
+ * POST /api/applications/:id/schedule-employer-interview
+ * Schedules employer interview and sends notifications
+ */
+exports.scheduleEmployerInterview = async (req, res) => {
+    try {
+        const { id: applicationId } = req.params;
+        const { scheduledDate, scheduledTime, interviewType, employerContact, meetingLink, location, notes } = req.body;
+
+        const application = await Application.findById(applicationId);
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found.' });
+        }
+        if (application.screeningStage !== 'selected_for_employer') {
+            return res.status(400).json({ message: 'Application is not ready for employer scheduling.' });
+        }
+
+        // Update application with employer interview details
+        application.employerInterview = {
+            scheduledDate: new Date(scheduledDate),
+            scheduledTime,
+            interviewType,
+            employerContact,
+            meetingLink,
+            location,
+            notes,
+            status: 'pending'
+        };
+        
+        application.screeningStage = 'employer_scheduled';
+        application.stageHistory.push({
+            stage: 'employer_scheduling',
+            timestamp: new Date(),
+            status: 'scheduled',
+            scheduledDate: new Date(scheduledDate),
+            employerContact,
+            notes: `Interview scheduled for ${scheduledDate} at ${scheduledTime}`
+        });
+
+        // Calculate progress percentage
+        application.calculateProgressPercentage();
+
+        await application.save();
+
+        // Send confirmation emails
+        await sendApplicationEmail(application, 'employer_interview_scheduled', {
+            scheduledDate,
+            scheduledTime,
+            interviewType,
+            employerContact,
+            meetingLink,
+            location
+        });
+
+        await sendEmployerNotification(application, 'interview_scheduled', {
+            scheduledDate,
+            scheduledTime,
+            interviewType,
+            meetingLink,
+            location
+        });
+
+        res.json({
+            success: true,
+            message: 'Employer interview scheduled successfully',
+            interviewDetails: application.employerInterview,
+            progressPercentage: application.progressPercentage
+        });
+
+    } catch (error) {
+        console.error('Error scheduling employer interview:', error);
+        res.status(500).json({ message: 'An error occurred while scheduling the employer interview.' });
+    }
+};
+
+/**
+ * POST /api/applications/:id/complete-employer-interview
+ * Marks employer interview as completed and updates status
+ */
+exports.completeEmployerInterview = async (req, res) => {
+    try {
+        const { id: applicationId } = req.params;
+        const { feedback, decision } = req.body;
+
+        const application = await Application.findById(applicationId);
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found.' });
+        }
+        if (application.screeningStage !== 'employer_scheduled') {
+            return res.status(400).json({ message: 'Employer interview is not scheduled.' });
+        }
+
+        // Update employer interview status
+        application.employerInterview.status = 'completed';
+        application.employerInterview.feedback = feedback;
+        application.employerInterview.decision = decision;
+        
+        application.screeningStage = 'employer_interview_completed';
+        application.stageHistory.push({
+            stage: 'employer_interview',
+            timestamp: new Date(),
+            status: 'completed',
+            notes: `Interview completed with decision: ${decision}`
+        });
+
+        if (decision === 'hired') {
+            application.status = 'hired';
+            application.screeningStage = 'hired';
+            application.stageHistory.push({
+                stage: 'hiring',
+                timestamp: new Date(),
+                status: 'completed',
+                notes: 'Candidate has been hired'
+            });
+            
+            // Send hiring confirmation
+            await sendApplicationEmail(application, 'hired');
+        }
+
+        // Calculate progress percentage
+        application.calculateProgressPercentage();
+
+        await application.save();
+
+        res.json({
+            success: true,
+            message: 'Employer interview completed successfully',
+            decision,
+            progressPercentage: application.progressPercentage
+        });
+
+    } catch (error) {
+        console.error('Error completing employer interview:', error);
+        res.status(500).json({ message: 'An error occurred while completing the employer interview.' });
     }
 };
