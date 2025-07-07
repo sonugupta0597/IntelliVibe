@@ -11,6 +11,8 @@ const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const authRoutes = require('./routes/authRoutes');
 const { createClient } = require('@deepgram/sdk');
+
+const aiRoutes = require('./routes/aiRoutes');
 const path = require('path');
 const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
@@ -40,6 +42,11 @@ const io = new Server(server, {
     origin: '*', // In production, restrict this to your frontend's URL: "http://localhost:5173"
   },
 });
+console.log('server.js loaded');
+app.use('/api/auth', authRoutes);
+app.use('/api/jobs', jobRoutes); // Add this
+app.use('/api/applications', applicationRoutes);
+app.use('/api/ai', aiRoutes);
 
 const PORT = process.env.PORT || 5001;
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
