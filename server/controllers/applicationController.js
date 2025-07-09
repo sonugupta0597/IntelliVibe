@@ -133,7 +133,7 @@ exports.applyForJob = async (req, res) => {
                     timeLimit: quiz.timeLimit,
                     numberOfQuestions: quiz.questions.length
                 });
-
+ 
                 await application.save();
 
                 return res.status(201).json({
