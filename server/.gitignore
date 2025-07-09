@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 
 .env
+
+# Credentials and sensitive files
+google-credentials.json
+*-credentials.json
+credentials.json
+*.key
+*.pem
+*.p12
