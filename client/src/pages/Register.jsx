@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react'; // Import a loader icon
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import { Switch } from "@/components/ui/switch";
 
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -24,6 +25,7 @@ const Register = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState(null); // State to hold server-side error messages
+    const [selectedRole, setSelectedRole] = useState('candidate');
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -32,6 +34,7 @@ const Register = () => {
             lastName: "",
             email: "",
             password: "",
+            role: "candidate",
         },
     });
 
@@ -67,10 +70,7 @@ const Register = () => {
     };
 
     return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+        <div 
             className="flex justify-center items-center py-12"
         >
             <Card className="w-full max-w-md">
@@ -79,6 +79,19 @@ const Register = () => {
                     <CardDescription>Join our platform as a candidate or an employer.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <div className="flex items-center justify-center mb-4 gap-4">
+                        <span className={selectedRole === 'candidate' ? 'font-bold' : ''}>Candidate</span>
+                        <Switch
+                            checked={selectedRole === 'employer'}
+                            onCheckedChange={checked => {
+                                setSelectedRole(checked ? 'employer' : 'candidate');
+                                form.setValue('role', checked ? 'employer' : 'candidate');
+                            }}
+                            id="role-toggle"
+                        />
+                        <span className={selectedRole === 'employer' ? 'font-bold' : ''}>Employer</span>
+                    </div>
+                    <GoogleSignInButton text={`Sign up with Google as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`} className="w-full mb-4" role={selectedRole} />
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -135,28 +148,7 @@ const Register = () => {
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="role"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>I am a...</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select a role" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="candidate">Candidate</SelectItem>
-                                                <SelectItem value="employer">Employer</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
+                            {/* Remove the dropdown role selector, replaced by toggle */}
                             {/* Display API error message here */}
                             {apiError && (
                                 <p className="text-sm font-medium text-destructive">{apiError}</p>
@@ -182,7 +174,7 @@ const Register = () => {
                     </p>
                 </CardContent>
             </Card>
-        </motion.div>
+        </div>
     );
 };
 

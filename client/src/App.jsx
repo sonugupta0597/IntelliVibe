@@ -12,6 +12,7 @@ import { Toaster } from 'sonner';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ApplicantsPage from './pages/ApplicantsPage';
 import VideoInterviewPage from './pages/VideoInterviewPage';
+import GoogleAuthSuccess from './pages/GoogleAuthSuccess';
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -24,6 +25,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/google-auth-success" element={<GoogleAuthSuccess />} />
           {/* --- PROTECTED CANDIDATE ROUTES --- */}
           {/* These routes can only be accessed by logged-in users with the 'candidate' role */}
           <Route element={<ProtectedRoute requiredRole="candidate" />}>

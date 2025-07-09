@@ -1,5 +1,8 @@
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -9,17 +12,13 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 // @access  Public
 exports.registerUser = async (req, res) => {
-       console.log("auth controller");
     const { firstName, lastName, email, password, role } = req.body;
-   // console.log("auth controller");
     try {
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
-
         const user = await User.create({ firstName, lastName, email, password, role });
-
         if (user) {
             res.status(201).json({
                 _id: user._id,
@@ -32,6 +31,13 @@ exports.registerUser = async (req, res) => {
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {
+        // Handle duplicate key error (E11000) from MongoDB
+        if (error.code === 11000 && error.keyPattern && error.keyPattern.email) {
+            // Do not log this error
+            return res.status(400).json({ message: 'User already exists' });
+        }
+        // Log only unexpected errors
+        console.error('[Register Error]', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
@@ -58,4 +64,36 @@ exports.loginUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
+};
+
+exports.googlePopupAuth = async (req, res) => {
+  try {
+    const { credential, role } = req.body;
+    if (!credential) return res.status(400).json({ message: 'No credential provided' });
+    // Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) return res.status(400).json({ message: 'Invalid Google token' });
+    // Find or create user
+    let user = await User.findOne({ email: payload.email });
+    if (!user) {
+      user = await User.create({
+        firstName: payload.given_name || 'Google',
+        lastName: payload.family_name || 'User',
+        email: payload.email,
+        googleId: payload.sub,
+        provider: 'google',
+        password: '',
+        role: role || 'candidate',
+      });
+    }
+    // Issue JWT
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, email: user.email, role: user.role });
+  } catch (err) {
+    res.status(500).json({ message: 'Google authentication failed', error: err.message });
+  }
 };

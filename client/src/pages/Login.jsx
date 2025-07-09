@@ -4,13 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from 'lucide-react'; // For loading spinner
 import { useAuth } from '@/contexts/AuthContext';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import { motion } from 'framer-motion';
 
 // Define the validation schema with Zod
 const formSchema = z.object({
@@ -69,6 +70,7 @@ const Login = () => {
                     <CardDescription>Enter your credentials to access your account.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <GoogleSignInButton text="Sign in with Google" className="w-full mb-4" />
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField
