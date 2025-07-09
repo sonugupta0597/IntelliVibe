@@ -17,6 +17,9 @@ const path = require('path');
 const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
 const { startStreamingRecognize } = require('./services/googleSpeechService');
+const session = require('express-session');
+const passport = require('./config/passport');
+const googleAuthRoutes = require('./routes/googleAuthRoutes');
 // Initialize Express App
 
 
@@ -28,6 +31,13 @@ const app = express();
 // --- Core Middleware ---
 app.use(cors());
 app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'secret',
+  resave: false,
+  saveUninitialized: false,
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 connectDB();
 
@@ -35,6 +45,7 @@ connectDB();
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', googleAuthRoutes);
 
 
 const server = http.createServer(app);

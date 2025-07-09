@@ -18,10 +18,13 @@ import {
     Calendar,
     Building2,
     MapPin,
-    ExternalLink
+    ExternalLink,
+    Award,
+    MessageSquare
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ApplicationProgressTracker from '@/components/ApplicationProgressTracker';
+import InterviewAnalytics from '@/components/InterviewAnalytics';
 
 const CandidateDashboard = () => {
     const [applications, setApplications] = useState([]);
@@ -32,7 +35,9 @@ const CandidateDashboard = () => {
         reviewed: 0,
         shortlisted: 0,
         rejected: 0,
-        averageScore: 0
+        averageScore: 0,
+        completedInterviews: 0,
+        averageInterviewScore: 0
     });
     const { userInfo } = useAuth();
 
@@ -51,6 +56,12 @@ const CandidateDashboard = () => {
             setApplications(data);
             
             // Calculate statistics
+            const completedInterviews = data.filter(app => 
+                app.videoAnalysisReport && 
+                app.videoAnalysisReport.overallScore !== null &&
+                app.screeningStage === 'video_completed'
+            );
+
             const stats = {
                 total: data.length,
                 pending: data.filter(app => app.status === 'pending').length,
@@ -63,6 +74,13 @@ const CandidateDashboard = () => {
                             .filter(app => app.aiMatchScore !== null)
                             .reduce((acc, app) => acc + app.aiMatchScore, 0) /
                         data.filter(app => app.aiMatchScore !== null).length
+                    )
+                    : 0,
+                completedInterviews: completedInterviews.length,
+                averageInterviewScore: completedInterviews.length > 0
+                    ? Math.round(
+                        completedInterviews.reduce((acc, app) => acc + app.videoAnalysisReport.overallScore, 0) /
+                        completedInterviews.length
                     )
                     : 0
             };
@@ -155,6 +173,45 @@ const CandidateDashboard = () => {
                             <p className="text-xs text-muted-foreground">
                                 {application.aiJustification}
                             </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Video Interview Scores Section */}
+                {application.videoAnalysisReport && application.videoAnalysisReport.overallScore !== null && (
+                    <div className="space-y-3 border-t pt-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Video Interview Analysis</span>
+                            <Badge variant={getScoreBadgeVariant(application.videoAnalysisReport.overallScore)}>
+                                {application.videoAnalysisReport.overallScore}%
+                            </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="text-center p-2 bg-blue-50 rounded">
+                                <div className="font-semibold text-blue-600">
+                                    {application.videoAnalysisReport.communicationScore || 'N/A'}%
+                                </div>
+                                <div className="text-blue-500">Communication</div>
+                            </div>
+                            <div className="text-center p-2 bg-yellow-50 rounded">
+                                <div className="font-semibold text-yellow-600">
+                                    {application.videoAnalysisReport.technicalScore || 'N/A'}%
+                                </div>
+                                <div className="text-yellow-500">Technical</div>
+                            </div>
+                            <div className="text-center p-2 bg-purple-50 rounded">
+                                <div className="font-semibold text-purple-600">
+                                    {application.videoAnalysisReport.confidenceScore || 'N/A'}%
+                                </div>
+                                <div className="text-purple-500">Confidence</div>
+                            </div>
+                        </div>
+
+                        {application.videoAnalysisReport.feedback && (
+                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                                <span className="font-medium">Feedback:</span> {application.videoAnalysisReport.feedback}
+                            </div>
                         )}
                     </div>
                 )}
@@ -275,7 +332,7 @@ const CandidateDashboard = () => {
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-6">
+            <div className="grid gap-4 md:grid-cols-8">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Applied</CardTitle>
@@ -330,7 +387,28 @@ const CandidateDashboard = () => {
                         <div className="text-2xl font-bold">{stats.averageScore}%</div>
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Interviews</CardTitle>
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-purple-600">{stats.completedInterviews}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Avg. Interview</CardTitle>
+                        <Award className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-indigo-600">{stats.averageInterviewScore}%</div>
+                    </CardContent>
+                </Card>
             </div>
+
+            {/* Interview Analytics Section */}
+            <InterviewAnalytics applications={applications} />
 
             {/* Applications List with Tabs */}
             <Tabs defaultValue="all" className="w-full">
