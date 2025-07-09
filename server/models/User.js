@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema({
     role: { type: String, enum: ['candidate', 'employer'], default: 'candidate' },
     googleId: { type: String, default: null },
     provider: { type: String, enum: ['local', 'google'], default: 'local' },
+    profilePic: { type: String, default: '' },
 }, { timestamps: true });
 
 // Hash password before saving

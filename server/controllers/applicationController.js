@@ -48,7 +48,25 @@ exports.applyForJob = async (req, res) => {
             return res.status(404).json({ message: 'Job not found' });
         }
 
-        // Create application
+        // Parse PDF
+        const pdfPath = path.join(__dirname, '..', req.file.path);
+        const dataBuffer = await fs.readFile(pdfPath);
+        const pdfData = await pdfParse(dataBuffer);
+        const resumeText = pdfData.text;
+
+        // Analyze with AI
+        const aiAnalysis = await analyzeResume(resumeText, {
+            title: job.title,
+            company: job.companyName,
+            skills: job.skills,
+            description: job.description,
+            experienceLevel: job.experienceLevel,
+            jobType: job.jobType,
+            location: job.location,
+        });
+
+        console.log(" aiAnalysis ", aiAnalysis);
+        // Only create and save application if AI analysis succeeds
         const application = new Application({
             job: jobId,
             candidate: req.user._id,
@@ -58,154 +76,118 @@ exports.applyForJob = async (req, res) => {
                 stage: 'resume_uploaded',
                 timestamp: new Date(),
                 status: 'completed'
-            }]
+            }],
+            aiMatchScore: aiAnalysis.matchScore,
+            aiJustification: aiAnalysis.justification,
+            aiAnalysisDate: new Date()
         });
-        await application.save();
+        application.calculateProgressPercentage();
 
-        // Perform AI analysis asynchronously but wait for result
-        try {
-            // Parse PDF
-            const pdfPath = path.join(__dirname, '..', req.file.path);
-            const dataBuffer = await fs.readFile(pdfPath);
-            const pdfData = await pdfParse(dataBuffer);
-            const resumeText = pdfData.text;
-
-            // Analyze with AI
-            const aiAnalysis = await analyzeResume(resumeText, {
-                title: job.title,
-                company: job.companyName,
-                skills: job.skills,
-                description: job.description,
-                experienceLevel: job.experienceLevel,
-                jobType: job.jobType,
-                location: job.location,
+        // Determine next stage based on score
+        const RESUME_THRESHOLD_FOR_QUIZ = 60; // Example threshold
+        if (aiAnalysis.matchScore >= RESUME_THRESHOLD_FOR_QUIZ) {
+            // Qualify for quiz
+            application.screeningStage = 'quiz_pending';
+            application.status = 'shortlisted';
+            application.stageHistory.push({
+                stage: 'resume_screening',
+                timestamp: new Date(),
+                status: 'passed',
+                score: aiAnalysis.matchScore,
+                notes: 'Qualified for skills assessment'
             });
 
-            console.log(" aiAnalysis ", aiAnalysis);
-            // Update application with AI results
-            application.aiMatchScore = aiAnalysis.matchScore;
-            application.aiJustification = aiAnalysis.justification;
-            application.aiAnalysisDate = new Date();
+            // Generate quiz if it doesn't exist for this job
+            let quiz = await Quiz.findOne({ job: jobId });
+            if (!quiz) {
+                   // 1. Create a default quiz config object from your model.
+                   const defaultQuizConfig = new Quiz();
 
-            // Calculate progress percentage
-            application.calculateProgressPercentage();
-
-            // Determine next stage based on score
-            const RESUME_THRESHOLD_FOR_QUIZ = 60; // Example threshold
-            if (aiAnalysis.matchScore >= RESUME_THRESHOLD_FOR_QUIZ) {
-                // Qualify for quiz
-                application.screeningStage = 'quiz_pending';
-                application.status = 'shortlisted';
-                application.stageHistory.push({
-                    stage: 'resume_screening',
-                    timestamp: new Date(),
-                    status: 'passed',
-                    score: aiAnalysis.matchScore,
-                    notes: 'Qualified for skills assessment'
-                });
-
-                // Generate quiz if it doesn't exist for this job
-                let quiz = await Quiz.findOne({ job: jobId });
-                if (!quiz) {
-                       // 1. Create a default quiz config object from your model.
-                       const defaultQuizConfig = new Quiz();
-
-                    const questions = await generateQuizQuestions({
-                        title: job.title,
-                        skills: job.skills,
-                        description: job.description,
-                    },  { // Second argument: Quiz Config
-                        difficultyDistribution: defaultQuizConfig.difficultyDistribution
-                    }
-                );
-                    quiz = new Quiz({
-                        job: jobId,
-                        questions: questions,
-                        passingScore: 70, // Example passing score
-                        timeLimit: 30 // 30 minutes
-                    });
-                    await quiz.save();
+                const questions = await generateQuizQuestions({
+                    title: job.title,
+                    skills: job.skills,
+                    description: job.description,
+                },  { // Second argument: Quiz Config
+                    difficultyDistribution: defaultQuizConfig.difficultyDistribution
                 }
-
-                // Send quiz invitation email
-                await sendApplicationEmail(application, 'quiz_invitation', {
-                    quizUrl: `${process.env.FRONTEND_URL}/candidate/quiz/${application._id}`,
-                    timeLimit: quiz.timeLimit,
-                    numberOfQuestions: quiz.questions.length
+            );
+                quiz = new Quiz({
+                    job: jobId,
+                    questions: questions,
+                    passingScore: 70, // Example passing score
+                    timeLimit: 30 // 30 minutes
                 });
- 
-                await application.save();
-
-                return res.status(201).json({
-                    success: true,
-                    message: 'Congratulations! Your application has been submitted and you qualify for the next stage.',
-                    application: {
-                        _id: application._id,
-                        status: application.status,
-                        aiMatchScore: application.aiMatchScore,
-                        screeningStage: application.screeningStage,
-                        nextStep: {
-                            stage: 'quiz',
-                            message: 'Please check your email for the skills assessment quiz invitation.',
-                            quizAvailable: true
-                        }
-                    }
-                });
-            } else {
-                // Not qualified - reject with feedback
-                application.screeningStage = 'resume_rejected';
-                application.status = 'rejected';
-                application.stageHistory.push({
-                    stage: 'resume_screening',
-                    timestamp: new Date(),
-                    status: 'failed',
-                    score: aiAnalysis.matchScore,
-                    notes: 'Did not meet minimum requirements'
-                });
-                
-                // Calculate progress percentage
-                application.calculateProgressPercentage();
-                
-                await application.save();
-
-                // Send rejection email with feedback
-                await sendApplicationEmail(application, 'resume_rejected', {
-                    score: aiAnalysis.matchScore,
-                    feedback: aiAnalysis.justification,
-                    threshold: RESUME_THRESHOLD_FOR_QUIZ
-                });
-
-                return res.status(201).json({
-                    success: false,
-                    message: 'Thank you for your application. Unfortunately, your profile does not match the current requirements for this position.',
-                    application: {
-                        _id: application._id,
-                        status: application.status,
-                        aiMatchScore: application.aiMatchScore,
-                        feedback: aiAnalysis.justification,
-                        suggestions: 'Consider gaining more experience in the required skills and reapplying in the future.'
-                    }
-                });
+                await quiz.save();
             }
-        } catch (aiError) {
-            console.error('AI analysis error:', aiError);
-            // If AI fails, still save the application but mark for manual review
-            application.screeningStage = 'manual_review_needed';
-            application.status = 'pending';
+
+            // Send quiz invitation email
+            // await sendApplicationEmail(application, 'quiz_invitation', {
+            //     quizUrl: `${process.env.FRONTEND_URL}/candidate/quiz/${application._id}`,
+            //     timeLimit: quiz.timeLimit,
+            //     numberOfQuestions: quiz.questions.length
+            // });
+ 
             await application.save();
 
             return res.status(201).json({
                 success: true,
-                message: 'Application submitted. It will be reviewed by our team.',
+                message: 'Congratulations! Your application has been submitted and you qualify for the next stage.',
                 application: {
                     _id: application._id,
                     status: application.status,
+                    aiMatchScore: application.aiMatchScore,
+                    screeningStage: application.screeningStage,
+                    nextStep: {
+                        stage: 'quiz',
+                        message: 'Please check your email for the skills assessment quiz invitation.',
+                        quizAvailable: true
+                    }
+                }
+            });
+        } else {
+            // Not qualified - reject with feedback
+            application.screeningStage = 'resume_rejected';
+            application.status = 'rejected';
+            application.stageHistory.push({
+                stage: 'resume_screening',
+                timestamp: new Date(),
+                status: 'failed',
+                score: aiAnalysis.matchScore,
+                notes: 'Did not meet minimum requirements'
+            });
+            
+            // Calculate progress percentage
+            application.calculateProgressPercentage();
+            
+            await application.save();
+
+            // Send rejection email with feedback
+            // await sendApplicationEmail(application, 'resume_rejected', {
+            //     score: aiAnalysis.matchScore,
+            //     feedback: aiAnalysis.justification,
+            //     threshold: RESUME_THRESHOLD_FOR_QUIZ
+            // });
+
+            return res.status(201).json({
+                success: false,
+                message: 'Thank you for your application. Unfortunately, your profile does not match the current requirements for this position.',
+                application: {
+                    _id: application._id,
+                    status: application.status,
+                    aiMatchScore: application.aiMatchScore,
+                    feedback: aiAnalysis.justification,
+                    suggestions: 'Consider gaining more experience in the required skills and reapplying in the future.'
                 }
             });
         }
-    } catch (error) {
-        console.error('Error in job application:', error);
-        return res.status(500).json({ message: 'Error submitting application', error: error.message });
+    } catch (aiError) {
+        console.error('AI analysis error:', aiError);
+        // Do NOT save the application if AI fails
+        return res.status(503).json({
+            success: false,
+            message: 'AI analysis failed. Please try again later.',
+            error: aiError.message || aiError.toString()
+        });
     }
 };
 
@@ -247,6 +229,7 @@ exports.getApplicantsForJob = async (req, res) => {
         }
         
         const applications = await Application.find({ job: jobId })
+            .select('+employerInterview')
             .populate('candidate', 'firstName lastName email')
             .sort({ aiMatchScore: -1, createdAt: -1 });
 
@@ -479,6 +462,7 @@ exports.updateApplicationStatus = async (req, res) => {
 exports.getMyCandidateApplications = async (req, res) => {
     try {
         const applications = await Application.find({ candidate: req.user._id })
+            .select('+employerInterview')
             .populate('job', 'title companyName location skills')
             .sort({ createdAt: -1 });
 
@@ -613,7 +597,7 @@ exports.submitQuizAnswers = async (req, res) => {
             application.calculateProgressPercentage();
 
             // Send video interview invitation
-            await sendApplicationEmail(application, 'video_invitation');
+            // await sendApplicationEmail(application, 'video_invitation');
 
             await application.save();
 
@@ -648,10 +632,10 @@ exports.submitQuizAnswers = async (req, res) => {
             await application.save();
 
             // Send rejection email
-            await sendApplicationEmail(application, 'quiz_failed', {
-                score: score,
-                passingScore: quiz.passingScore
-            });
+            // await sendApplicationEmail(application, 'quiz_failed', {
+            //     score: score,
+            //     passingScore: quiz.passingScore
+            // });
 
             res.json({
                 success: false,
@@ -821,7 +805,7 @@ exports.completeVideoInterview = async (req, res) => {
             });
             
             // Send selection email to candidate
-            await sendApplicationEmail(application, 'selected_for_employer');
+            // await sendApplicationEmail(application, 'selected_for_employer');
             
             // Send notification to employer
             await sendEmployerNotification(application, 'candidate_selected');
@@ -839,10 +823,10 @@ exports.completeVideoInterview = async (req, res) => {
             });
             
             // Send rejection email
-            await sendApplicationEmail(application, 'video_failed', {
-                score: videoAnalysisReport.overallScore,
-                feedback: videoAnalysisReport.feedback
-            });
+            // await sendApplicationEmail(application, 'video_failed', {
+            //     score: videoAnalysisReport.overallScore,
+            //     feedback: videoAnalysisReport.feedback
+            // });
         }
 
         // Calculate progress percentage
@@ -910,14 +894,14 @@ exports.scheduleEmployerInterview = async (req, res) => {
         await application.save();
 
         // Send confirmation emails
-        await sendApplicationEmail(application, 'employer_interview_scheduled', {
-            scheduledDate,
-            scheduledTime,
-            interviewType,
-            employerContact,
-            meetingLink,
-            location
-        });
+        // await sendApplicationEmail(application, 'employer_interview_scheduled', {
+        //     scheduledDate,
+        //     scheduledTime,
+        //     interviewType,
+        //     employerContact,
+        //     meetingLink,
+        //     location
+        // });
 
         await sendEmployerNotification(application, 'interview_scheduled', {
             scheduledDate,
@@ -981,7 +965,7 @@ exports.completeEmployerInterview = async (req, res) => {
             });
             
             // Send hiring confirmation
-            await sendApplicationEmail(application, 'hired');
+            // await sendApplicationEmail(application, 'hired');
         }
 
         // Calculate progress percentage

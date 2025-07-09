@@ -12,12 +12,31 @@ import axios from 'axios';
 import { Loader2 } from 'lucide-react'; // Import a loader icon
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 import { Switch } from "@/components/ui/switch";
+import { Info } from 'lucide-react';
+
+const passwordRules = [
+  "At least 8 characters",
+  "At least one uppercase letter (A-Z)",
+  "At least one lowercase letter (a-z)",
+  "At least one number (0-9)",
+  "At least one special character (!@#$%^&*)"
+];
 
 const formSchema = z.object({
-  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
-  lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  firstName: z.string()
+    .min(2, { message: "First name must be at least 2 characters." })
+    .regex(/^[A-Za-z]+$/, { message: "First name must contain only letters." }),
+  lastName: z.string()
+    .min(2, { message: "Last name must be at least 2 characters." })
+    .regex(/^[A-Za-z]+$/, { message: "Last name must contain only letters." }),
+  email: z.string()
+    .email({ message: "Please enter a valid email address." }),
+  password: z.string()
+    .min(8, { message: "Password must be at least 8 characters." })
+    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter." })
+    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter." })
+    .regex(/[0-9]/, { message: "Password must contain at least one number." })
+    .regex(/[!@#$%^&*]/, { message: "Password must contain at least one special character (!@#$%^&*)." }),
   role: z.enum(["candidate", "employer"], { required_error: "You must select a role." }),
 });
 
@@ -26,6 +45,7 @@ const Register = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState(null); // State to hold server-side error messages
     const [selectedRole, setSelectedRole] = useState('candidate');
+    const [showPasswordRules, setShowPasswordRules] = useState(false);
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -36,6 +56,8 @@ const Register = () => {
             password: "",
             role: "candidate",
         },
+        mode: 'onSubmit',
+        reValidateMode: 'onSubmit',
     });
 
     // THE FIX IS IN THIS FUNCTION
@@ -74,9 +96,9 @@ const Register = () => {
             className="flex justify-center items-center py-12"
         >
             <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle className="text-2xl">Create an Account</CardTitle>
-                    <CardDescription>Join our platform as a candidate or an employer.</CardDescription>
+                <CardHeader className="mb-10">
+                    <CardTitle className="text-2xl">Join the AI Recruitment Revolution</CardTitle>
+                    <CardDescription>Sign up as a candidate or employer and experience AI-powered hiring.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-center mb-4 gap-4">
@@ -104,7 +126,7 @@ const Register = () => {
                                             <FormControl>
                                                 <Input placeholder="John" {...field} />
                                             </FormControl>
-                                            <FormMessage />
+                                            <FormMessage className="text-destructive text-red-500 font-semibold mt-1" />
                                         </FormItem>
                                     )}
                                 />
@@ -117,7 +139,7 @@ const Register = () => {
                                             <FormControl>
                                                 <Input placeholder="Doe" {...field} />
                                             </FormControl>
-                                            <FormMessage />
+                                            <FormMessage className="text-destructive text-red-500 font-semibold mt-1" />
                                         </FormItem>
                                     )}
                                 />
@@ -131,7 +153,7 @@ const Register = () => {
                                         <FormControl>
                                             <Input type="email" placeholder="you@example.com" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage className="text-destructive text-red-500 font-semibold mt-1" />
                                     </FormItem>
                                 )}
                             />
@@ -139,12 +161,32 @@ const Register = () => {
                                 control={form.control}
                                 name="password"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
+                                    <FormItem className="relative">
+                                        <FormLabel className="flex items-center gap-2">
+                                            Password
+                                            <button
+                                                type="button"
+                                                aria-label="Show password rules"
+                                                className="focus:outline-none"
+                                                onClick={() => setShowPasswordRules((v) => !v)}
+                                            >
+                                                <Info className="w-4 h-4 text-pink-200 hover:text-pink-400" />
+                                            </button>
+                                        </FormLabel>
                                         <FormControl>
                                             <Input type="password" placeholder="••••••••" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage className="text-destructive text-red-500 font-semibold mt-1" />
+                                        {showPasswordRules && (
+                                            <div className="absolute z-20 mt-2 bg-gray-900 border border-pink-400 rounded-lg shadow-lg p-4 text-xs text-pink-100 w-64">
+                                                <div className="font-semibold mb-2 text-pink-200">Password must contain:</div>
+                                                <ul className="list-disc pl-5">
+                                                    {passwordRules.map(rule => (
+                                                        <li key={rule}>{rule}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </FormItem>
                                 )}
                             />
@@ -166,7 +208,7 @@ const Register = () => {
                             </Button>
                         </form>
                     </Form>
-                    <p className="text-center text-sm text-muted-foreground mt-4">
+                    <p className="text-center text-sm text-white mt-4">
                         Already have an account?{' '}
                         <Link to="/login" className="font-semibold text-primary hover:underline">
                             Login

@@ -197,7 +197,7 @@ const AIBotAvatar = ({
                     exit={{ opacity: 0, scale: 0.8, y: 10 }}
                     transition={{ duration: 0.3 }}
                 >
-                    <div className="text-sm text-gray-800 leading-relaxed">
+                    <div className="text-sm text-white leading-relaxed">
                         {question}
                     </div>
                     {/* Speech bubble arrow */}

@@ -25,7 +25,7 @@ class ErrorBoundary extends Component {
                 <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
                     <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-xl text-center">
                         <h1 className="text-2xl font-bold mb-4 text-red-600">Something went wrong</h1>
-                        <p className="text-gray-600 mb-4">There was an error in the interview interface.</p>
+                        <p className="text-white mb-4">There was an error in the interview interface.</p>
                         <button 
                             onClick={() => window.location.reload()} 
                             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -64,73 +64,72 @@ const findSupportedMimeType = () => {
 
 // --- UI Components (No changes needed, included for completeness) ---
 const Lobby = ({ onStartInterview, localStream, isCameraReady }) => (
-    <div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-xl text-center">
-      <h1 className="text-3xl font-bold mb-4 text-gray-800">Interview Lobby</h1>
-      <p className="text-gray-600 mb-6">Check your audio and video before you begin.</p>
-      <div className="w-full aspect-video bg-gray-900 rounded-md mb-6 overflow-hidden">
+    <div className="w-full max-w-2xl mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl text-center relative overflow-hidden">
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-30" style={{background: 'linear-gradient(120deg, #e91e63 0%, #9c27b0 100%)'}} />
+      <h1 className="text-3xl font-bold mb-4 text-white drop-shadow-lg">Interview Lobby</h1>
+      <p className="text-pink-100 mb-6">Check your audio and video before you begin.</p>
+      <div className="w-full aspect-video bg-black/60 rounded-md mb-6 overflow-hidden">
         {isCameraReady ? <VideoPlayer stream={localStream} muted={true} /> : <div className="w-full h-full flex items-center justify-center"><p className="text-white">Waiting for camera permissions...</p></div>}
       </div>
-      <button onClick={onStartInterview} disabled={!isCameraReady} className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300">Start Interview</button>
+      <button onClick={onStartInterview} disabled={!isCameraReady} className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:from-pink-600 hover:to-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300">Start Interview</button>
     </div>
 );
 const InterviewScreen = ({ localStream, currentQuestion, questionNumber, liveTranscript, onEndAnswer }) => (
-
-    
-    
-    <div className="w-full max-w-4xl mx-auto p-8 bg-white rounded-lg shadow-xl">
-        {console.log("liveTranscript" + liveTranscript)}
-        <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+    <div className="w-full max-w-4xl mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl relative overflow-hidden">
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-30" style={{background: 'linear-gradient(120deg, #e91e63 0%, #9c27b0 100%)'}} />
+      <div className="mb-6 p-3 rounded-lg border border-pink-400/30 bg-white/10 text-white">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                    <span className="text-sm font-medium text-blue-800">Question {questionNumber}</span>
-                    <span className="text-sm text-blue-600">|</span>
-                    <span className="text-sm text-blue-800">Live Interview</span>
+            <span className="text-sm font-medium text-pink-200">Question {questionNumber}</span>
+            <span className="text-sm text-pink-100">|</span>
+            <span className="text-sm text-pink-200">Live Interview</span>
                 </div>
                 <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-green-700">Recording Active</span>
+            <span className="text-xs text-green-300">Recording Active</span>
                 </div>
             </div>
         </div>
-        
         <div className="grid grid-cols-3 gap-6">
             <div className="col-span-1">
-                <h3 className="font-semibold text-lg mb-2 text-gray-700">Your Camera</h3>
-                <div className="w-full aspect-square bg-gray-900 rounded-md overflow-hidden">
+          <h3 className="font-semibold text-lg mb-2 text-white">Your Camera</h3>
+          <div className="w-full aspect-square bg-black/60 rounded-md overflow-hidden">
                     <VideoPlayer stream={localStream} muted={true} />
                 </div>
                 <div className="mt-2 text-center">
-                    <div className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+            <div className="inline-flex items-center px-3 py-1 bg-green-100/20 text-green-200 rounded-full text-sm">
                         <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                         Recording
                     </div>
                 </div>
                 {/* Debug Info */}
-                <div className="mt-4 p-3 bg-yellow-50 rounded border text-xs">
-                    <h4 className="font-semibold text-yellow-800 mb-1">Debug Info:</h4>
-                    <p className="text-yellow-700">Transcript: "{liveTranscript || 'None'}"</p>
-                    <p className="text-yellow-700">Length: {liveTranscript ? liveTranscript.length : 0}</p>
+          <div className="mt-4 p-3 bg-yellow-100/10 rounded border border-yellow-200/30 text-xs text-yellow-100">
+            <h4 className="font-semibold mb-1">Debug Info:</h4>
+            <p>Transcript: "{liveTranscript || 'None'}"</p>
+            <p>Length: {liveTranscript ? liveTranscript.length : 0}</p>
                 </div>
             </div>
             <div className="col-span-2 flex flex-col">
-                <div className="flex-grow p-4 bg-gray-50 rounded-md mb-4">
-                    <h3 className="font-semibold text-lg mb-2 text-blue-800">Question {questionNumber}:</h3>
-                    <p className="text-xl text-gray-800 min-h-[60px]">{currentQuestion || "Waiting for the first question..."}</p>
+          <div className="flex-grow p-4 bg-white/10 rounded-md mb-4">
+            <h3 className="font-semibold text-lg mb-2 text-pink-200">Question {questionNumber}:</h3>
+            <p className="text-xl text-white min-h-[60px]">{currentQuestion || "Waiting for the first question..."}</p>
                 </div>
-                <div className="flex-grow p-4 bg-gray-50 rounded-md mb-4">
-                    <h3 className="font-semibold text-lg mb-2 text-green-800 flex items-center">
+          <div className="flex-grow p-4 bg-white/10 rounded-md mb-4">
+            <h3 className="font-semibold text-lg mb-2 text-green-200 flex items-center">
                         <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                         Live Transcript:
                     </h3>
-                    <div className="min-h-[60px] p-3 bg-white rounded border-2 border-green-200">
+            <div className="min-h-[60px] p-3 bg-black/40 rounded border-2 border-green-200/30">
                         {liveTranscript ? (
-                            <p className="text-lg text-gray-800 font-medium leading-relaxed">
+                <p className="text-lg text-white font-medium leading-relaxed">
                                 "{liveTranscript}"
                             </p>
                         ) : (
                             <div className="flex items-center justify-center h-full">
-                                <div className="flex items-center text-gray-400">
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full mr-2 animate-pulse"></div>
+                  <div className="flex items-center text-pink-100">
+                    <div className="w-2 h-2 bg-pink-200 rounded-full mr-2 animate-pulse"></div>
                                     Listening... Speak clearly into your microphone
                                 </div>
                             </div>
@@ -140,12 +139,12 @@ const InterviewScreen = ({ localStream, currentQuestion, questionNumber, liveTra
                 <div className="flex justify-center space-x-4">
                     <button 
                         onClick={onEndAnswer}
-                        className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+              className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-colors font-semibold"
                     >
                         End Answer
                     </button>
-                    <div className="text-sm text-gray-500 flex items-center">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+            <div className="text-sm text-pink-100 flex items-center">
+              <div className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></div>
                         Speech recognition active
                     </div>
                 </div>
@@ -153,7 +152,13 @@ const InterviewScreen = ({ localStream, currentQuestion, questionNumber, liveTra
         </div>
     </div>
 );
-const ThankYouScreen = () => (<div className="w-full max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-xl text-center"><h1 className="text-3xl font-bold mb-4 text-gray-800">Thank You!</h1><p className="text-gray-600">Your interview is complete. We appreciate your time and will be in touch with the next steps.</p></div>);
+const ThankYouScreen = () => (
+  <div className="w-full max-w-2xl mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl text-center relative overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none opacity-30" style={{background: 'linear-gradient(120deg, #e91e63 0%, #9c27b0 100%)'}} />
+    <h1 className="text-3xl font-bold mb-4 text-white drop-shadow-lg">Thank You!</h1>
+    <p className="text-pink-100">Your interview is complete. We appreciate your time and will be in touch with the next steps.</p>
+  </div>
+);
 const VideoPlayer = ({ stream, muted }) => {
     const videoRef = useRef(null);
     useEffect(() => { if (stream && videoRef.current) videoRef.current.srcObject = stream; }, [stream]);
@@ -379,15 +384,31 @@ const VideoInterviewPage = () => {
     const renderContent = () => {
         switch (interviewState) {
             case 'Interviewing': return <InterviewScreen localStream={localStreamRef.current} currentQuestion={currentQuestion} questionNumber={questionNumber} liveTranscript={liveTranscript} onEndAnswer={handleEndAnswer} />;
-            case 'Finished': return <ThankYouScreen />;
+            case 'Finished': return <Lobby />;
             default: return <Lobby onStartInterview={handleStartInterview} localStream={localStreamRef.current} isCameraReady={isCameraReady} />;
         }
     };
 
     return (
         <ErrorBoundary>
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+            <div
+                className="min-h-screen flex items-center justify-center p-4 text-white relative overflow-hidden"
+                style={{
+                    background: 'linear-gradient(135deg, #1a0b2e 0%, #16213e 50%, #0f3460 100%)',
+                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                }}
+            >
+                {/* Background Pattern */}
+                <div
+                    className="absolute inset-0 opacity-10 pointer-events-none z-0"
+                    style={{
+                        backgroundImage: `radial-gradient(circle at 25% 25%, rgba(233, 30, 99, 0.3) 0%, transparent 50%),
+                                         radial-gradient(circle at 75% 75%, rgba(156, 39, 176, 0.3) 0%, transparent 50%)`
+                    }}
+                />
+                <div className="relative z-10 w-full flex items-center justify-center">
                 {renderContent()}
+                </div>
             </div>
         </ErrorBoundary>
     );

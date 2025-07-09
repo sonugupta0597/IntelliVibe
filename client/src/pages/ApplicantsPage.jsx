@@ -14,7 +14,6 @@ import {
     XCircle, Clock, AlertCircle, Mail, Filter, BarChart3,
     Zap, BrainCircuit
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 const ApplicantsPage = () => {
     const { jobId } = useParams();
@@ -25,7 +24,6 @@ const ApplicantsPage = () => {
     const [sortBy, setSortBy] = useState('aiScore');
     const [filterBy, setFilterBy] = useState('all');
     const [selectedApplicants, setSelectedApplicants] = useState([]);
-    const [showStats, setShowStats] = useState(false);
     const { userInfo } = useAuth();
 
     useEffect(() => {
@@ -173,9 +171,7 @@ const ApplicantsPage = () => {
     }
 
     return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
+        <div 
             className="space-y-6"
         >
             <Link to="/employer/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary">
@@ -204,7 +200,7 @@ const ApplicantsPage = () => {
             )}
 
             {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-5">
+            <div className="grid gap-6 md:grid-cols-5">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total</CardTitle>
@@ -432,7 +428,7 @@ const ApplicantsPage = () => {
                     </div>
                 </CardContent>
             </Card>
-        </motion.div>
+        </div>
     );
 };
 

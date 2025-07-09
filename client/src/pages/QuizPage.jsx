@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { 
     Clock, 
     AlertCircle, 
@@ -35,6 +35,7 @@ const QuizPage = () => {
     const [quizResult, setQuizResult] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [autoSubmitted, setAutoSubmitted] = useState(false);
     
     // Fetch quiz data
     useEffect(() => {
@@ -59,6 +60,30 @@ const QuizPage = () => {
 
         return () => clearInterval(timer);
     }, [timeRemaining]);
+
+    // Auto-submit on tab change or back
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === 'hidden' && !quizResult && !autoSubmitted) {
+                setAutoSubmitted(true);
+                handleSubmit(true); // pass auto=true
+            }
+        };
+        const handleBeforeUnload = (e) => {
+            if (!quizResult && !autoSubmitted) {
+                setAutoSubmitted(true);
+                handleSubmit(true);
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [quizResult, autoSubmitted]);
 
     const fetchQuiz = async () => {
         try {
@@ -98,7 +123,7 @@ const QuizPage = () => {
         }
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (auto = false) => {
         // Check if all questions are answered
         const unansweredQuestions = quiz.questions.filter(
             q => answers[q._id] === undefined
@@ -122,14 +147,16 @@ const QuizPage = () => {
 
             const { data } = await axios.post(
                 `http://localhost:5001/api/applications/${applicationId}/quiz/submit`,
-                { answers: formattedAnswers },
+                { answers: formattedAnswers, auto },
                 config
             );
             
             setQuizResult(data);
         } catch (error) {
             console.error('Error submitting quiz:', error);
-            setError('Failed to submit quiz. Please try again.');
+            // Show backend error if available, else generic
+            const backendMsg = error.response?.data?.message;
+            setError(backendMsg || 'Failed to submit quiz. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -151,7 +178,7 @@ const QuizPage = () => {
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                    <p className="mt-4 text-muted-foreground">Loading quiz...</p>
+                    <p className="mt-4 text-white">Loading quiz...</p>
                 </div>
             </div>
         );
@@ -177,65 +204,69 @@ const QuizPage = () => {
 
     // Show result screen
     if (quizResult) {
+        // If auto-submitted, mark as failed
+        const failed = autoSubmitted || !quizResult.passed;
         return (
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="container mx-auto px-4 py-8 max-w-2xl"
-            >
-                <Card>
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-2xl">
-                            {quizResult.passed ? 'Congratulations!' : 'Quiz Completed'}
-                        </CardTitle>
-                        <CardDescription>
-                            {quiz.jobTitle} - {quiz.companyName}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="text-center">
-                            <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 ${
-                                quizResult.passed ? 'bg-green-100' : 'bg-red-100'
-                            }`}>
-                                {quizResult.passed ? (
-                                    <CheckCircle className="h-12 w-12 text-green-600" />
-                                ) : (
-                                    <XCircle className="h-12 w-12 text-red-600" />
-                                )}
+            <AnimatePresence mode="wait">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="container mx-auto px-4 py-8 max-w-2xl"
+                >
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-2xl">
+                                {failed ? 'Quiz Failed or Auto-Submitted' : 'Congratulations!'}
+                            </CardTitle>
+                            <CardDescription>
+                                {quiz.jobTitle} - {quiz.companyName}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="text-center">
+                                <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 ${
+                                    failed ? 'bg-red-100' : 'bg-green-100'
+                                }`}>
+                                    {failed ? (
+                                        <XCircle className="h-12 w-12 text-red-600" />
+                                    ) : (
+                                        <CheckCircle className="h-12 w-12 text-green-600" />
+                                    )}
+                                </div>
+                                <h3 className="text-3xl font-bold mb-2">
+                                    Your Score: {quizResult.score}%
+                                </h3>
+                                <p className="text-white">
+                                    Passing Score: {quizResult.passingScore}%
+                                </p>
                             </div>
-                            <h3 className="text-3xl font-bold mb-2">
-                                Your Score: {quizResult.score}%
-                            </h3>
-                            <p className="text-muted-foreground">
-                                Passing Score: {quizResult.passingScore}%
-                            </p>
-                        </div>
-
-                        <Alert className={quizResult.passed ? '' : 'border-red-200'}>
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>
-                                {quizResult.passed ? 'Next Steps' : 'Result'}
-                            </AlertTitle>
-                            <AlertDescription>
-                                {quizResult.message}
-                            </AlertDescription>
-                        </Alert>
-
-                        {quizResult.nextStep && (
-                            <div className="bg-blue-50 p-4 rounded-lg">
-                                <h4 className="font-semibold mb-2">What's Next?</h4>
-                                <p>{quizResult.nextStep.message}</p>
+                            <Alert className={failed ? 'border-red-200' : ''}>
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>
+                                    {failed ? 'Result' : 'Next Steps'}
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {quizResult.message}
+                                </AlertDescription>
+                            </Alert>
+                            {quizResult.nextStep && !failed && (
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <h4 className="font-semibold mb-2">What's Next?</h4>
+                                    <p>{quizResult.nextStep.message}</p>
+                                    <Button className="mt-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold" onClick={() => navigate(`/candidate/interview/${applicationId}`)}>
+                                        Start Interview
+                                    </Button>
+                                </div>
+                            )}
+                            <div className="flex justify-center pt-4">
+                                <Button onClick={() => navigate('/candidate/dashboard')}>
+                                    Back to Dashboard
+                                </Button>
                             </div>
-                        )}
-
-                        <div className="flex justify-center pt-4">
-                            <Button onClick={() => navigate('/candidate/dashboard')}>
-                                Back to Dashboard
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            </AnimatePresence>
         );
     }
 
@@ -256,7 +287,7 @@ const QuizPage = () => {
                                     {formatTime(timeRemaining)}
                                 </span>
                             </div>
-                            <p className="text-sm text-muted-foreground">Time Remaining</p>
+                            <p className="text-sm text-pink-100">Time Remaining</p>
                         </div>
                     </div>
                 </CardHeader>
@@ -336,7 +367,7 @@ const QuizPage = () => {
 
                 {currentQuestion === quiz.questions.length - 1 ? (
                     <Button
-                        onClick={handleSubmit}
+                        onClick={() => handleSubmit()}
                         disabled={isSubmitting}
                         className="ml-auto"
                     >

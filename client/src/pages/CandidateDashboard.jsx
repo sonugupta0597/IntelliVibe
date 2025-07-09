@@ -22,9 +22,8 @@ import {
     Award,
     MessageSquare
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ApplicationProgressTracker from '@/components/ApplicationProgressTracker';
-import InterviewAnalytics from '@/components/InterviewAnalytics';
 
 const CandidateDashboard = () => {
     const [applications, setApplications] = useState([]);
@@ -40,6 +39,7 @@ const CandidateDashboard = () => {
         averageInterviewScore: 0
     });
     const { userInfo } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchApplications();
@@ -126,14 +126,16 @@ const CandidateDashboard = () => {
     };
 
     const ApplicationCard = ({ application }) => (
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-            <CardHeader>
+        <Card className="relative flex flex-col bg-white/10 backdrop-blur-md shadow-2xl overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-pink-500/30 group" style={{ borderRadius: '1.5rem', boxShadow: '0 8px 32px 0 rgba(233,30,99,0.15), 0 1.5px 8px 0 rgba(156,39,176,0.10)' }}>
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-20 group-hover:opacity-40 transition-opacity duration-300" style={{background: 'linear-gradient(120deg, #e91e63 0%, #9c27b0 100%)'}} />
+            <CardHeader className="relative z-10">
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle className="text-lg">
+                        <CardTitle className="text-xl font-bold text-white drop-shadow-lg">
                             {application.job?.title || <span className="text-red-500">[Job no longer available]</span>}
                         </CardTitle>
-                        <CardDescription className="mt-1">
+                        <CardDescription className="mt-1 text-pink-100">
                             <div className="flex items-center gap-2 text-sm">
                                 <Building2 className="h-3 w-3" />
                                 {application.job?.companyName || <span className="text-red-500">N/A</span>}
@@ -144,166 +146,82 @@ const CandidateDashboard = () => {
                             </div>
                         </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col items-end gap-2">
                         {getStatusIcon(application.status)}
-                        <Badge variant={getStatusBadgeVariant(application.status)}>
+                        <Badge variant={getStatusBadgeVariant(application.status)} className="uppercase tracking-wide px-3 py-1 text-xs font-bold">
                             {application.status}
                         </Badge>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 relative z-10">
                 {/* AI Score Section */}
                 {application.aiMatchScore !== null && (
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">AI Match Score</span>
+                            <span className="text-sm font-medium text-white">AI Match Score</span>
                             <div className="flex items-center gap-2">
                                 <Badge variant={getScoreBadgeVariant(application.aiMatchScore)}>
                                     {application.aiMatchScore}%
                                 </Badge>
                                 {application.aiMatchScore >= 70 && (
-                                    <span className="text-xs text-green-600 font-medium">
+                                    <span className="text-xs text-green-400 font-medium">
                                         Strong Match
                                     </span>
                                 )}
                             </div>
                         </div>
                         {application.aiJustification && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-pink-100">
                                 {application.aiJustification}
                             </p>
                         )}
                     </div>
                 )}
-
                 {/* Video Interview Scores Section */}
                 {application.videoAnalysisReport && application.videoAnalysisReport.overallScore !== null && (
-                    <div className="space-y-3 border-t pt-3">
+                    <div className="space-y-3 border-t border-pink-400/30 pt-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Video Interview Analysis</span>
+                            <span className="text-sm font-medium text-white">Video Interview Analysis</span>
                             <Badge variant={getScoreBadgeVariant(application.videoAnalysisReport.overallScore)}>
                                 {application.videoAnalysisReport.overallScore}%
                             </Badge>
                         </div>
-                        
                         <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center p-2 bg-blue-50 rounded">
-                                <div className="font-semibold text-blue-600">
+                            <div className="text-center p-2 bg-blue-100/30 rounded">
+                                <div className="font-semibold text-blue-200">
                                     {application.videoAnalysisReport.communicationScore || 'N/A'}%
                                 </div>
-                                <div className="text-blue-500">Communication</div>
+                                <div className="text-blue-100">Communication</div>
                             </div>
-                            <div className="text-center p-2 bg-yellow-50 rounded">
-                                <div className="font-semibold text-yellow-600">
+                            <div className="text-center p-2 bg-yellow-100/30 rounded">
+                                <div className="font-semibold text-yellow-200">
                                     {application.videoAnalysisReport.technicalScore || 'N/A'}%
                                 </div>
-                                <div className="text-yellow-500">Technical</div>
+                                <div className="text-yellow-100">Technical</div>
                             </div>
-                            <div className="text-center p-2 bg-purple-50 rounded">
-                                <div className="font-semibold text-purple-600">
-                                    {application.videoAnalysisReport.confidenceScore || 'N/A'}%
+                            <div className="text-center p-2 bg-green-100/30 rounded">
+                                <div className="font-semibold text-green-200">
+                                    {application.videoAnalysisReport.articulationScore || 'N/A'}%
                                 </div>
-                                <div className="text-purple-500">Confidence</div>
-                            </div>
-                        </div>
-
-                        {application.videoAnalysisReport.feedback && (
-                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                                <span className="font-medium">Feedback:</span> {application.videoAnalysisReport.feedback}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Skills Gap Analysis */}
-                {application.skillsGapAnalysis && (
-                    <div className="border-t pt-3">
-                        <p className="text-sm font-medium mb-2">Skills Analysis</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="text-green-600">
-                                ✓ {application.skillsGapAnalysis.matched?.length || 0} skills matched
-                            </div>
-                            <div className="text-red-600">
-                                ✗ {application.skillsGapAnalysis.missing?.length || 0} skills missing
+                                <div className="text-green-100">Articulation</div>
                             </div>
                         </div>
                     </div>
                 )}
-
-                {/* Application Date */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-3">
-                    <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Applied {new Date(application.createdAt).toLocaleDateString()}
-                    </div>
-                    <Button asChild variant="ghost" size="sm" disabled={!application.job?._id}>
-                        <Link to={application.job?._id ? `/jobs/${application.job._id}` : "#"}>
-                            View Job <ExternalLink className="ml-1 h-3 w-3" />
-                        </Link>
-                    </Button>
-                </div>
-
                 {/* Progress Tracker */}
-                <div className="mt-4">
+                <div className="pt-2">
                     <ApplicationProgressTracker application={application} />
                 </div>
-
-                {/* Status-specific messages */}
-                {/* --- START OF CHANGES --- */}
-            {/* This block replaces the old status-specific messages */}
-
-            {/* If the candidate is eligible for the quiz, show this actionable alert */}
-            {application.screeningStage === 'quiz_pending' && (
-                <Alert className="mt-4 border-blue-200 bg-blue-50">
-                    <AlertCircle className="h-4 w-4 text-blue-600" />
-                    <AlertTitle className="text-blue-800">Next Step: Skills Assessment</AlertTitle>
-                    <AlertDescription className="flex items-center justify-between">
-                        <span>You've qualified for the skills assessment. Good luck!</span>
-                        <Button asChild size="sm">
-                            <Link to={`/candidate/quiz/${application._id}`}>
-                                Start Quiz
-                                <ExternalLink className="ml-2 h-3 w-3" />
-                            </Link>
-                        </Button>
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {/* If they passed the quiz and are waiting for the next step */}
-            {['video_pending', 'final_review', 'hired'].includes(application.screeningStage) && (
-                 <Alert className="mt-4 border-green-200 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-800">Congratulations!</AlertTitle>
-                    <AlertDescription>
-                        You've passed the quiz. The employer will be in touch about the next steps.
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {/* If they failed the quiz */}
-            {application.screeningStage === 'quiz_failed' && (
-                <Alert className="mt-4" variant="destructive">
-                    <XCircle className="h-4 w-4" />
-                    <AlertTitle>Quiz Completed</AlertTitle>
-                    <AlertDescription>
-                        Your score of {application.quizScore}% did not meet the passing threshold.
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {/* If they were rejected at the resume stage */}
-            {application.screeningStage === 'resume_rejected' && (
-                 <Alert className="mt-4" variant="destructive">
-                    <XCircle className="h-4 w-4" />
-                    <AlertTitle>Application Unsuccessful</AlertTitle>
-                    <AlertDescription>
-                        Your profile did not meet the minimum requirements for this position.
-                    </AlertDescription>
-                </Alert>
-            )}
-            
-            {/* --- END OF CHANGES --- */}
+                {/* Start Quiz Button */}
+                {(application.screeningStage === 'quiz_pending' || application.status === 'Skills Assessment') && (
+                    <Button
+                        className="mt-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold px-6 py-2 rounded-lg shadow-lg hover:from-pink-600 hover:to-purple-700 hover:shadow-pink-500/40 transition-all duration-300 text-lg"
+                        onClick={() => navigate(`/candidate/quiz/${application._id}`)}
+                    >
+                        Start Quiz
+                    </Button>
+                )}
             </CardContent>
         </Card>
     );
@@ -327,12 +245,12 @@ const CandidateDashboard = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold">My Applications</h1>
+                <h1 className="text-3xl font-bold mt-16">My Applications</h1>
                 <p className="text-muted-foreground mt-2">Track and manage your job applications</p>
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-8">
+            <div className="grid gap-6 md:grid-cols-8">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Applied</CardTitle>
@@ -407,9 +325,6 @@ const CandidateDashboard = () => {
                 </Card>
             </div>
 
-            {/* Interview Analytics Section */}
-            <InterviewAnalytics applications={applications} />
-
             {/* Applications List with Tabs */}
             <Tabs defaultValue="all" className="w-full">
                 <TabsList>
@@ -421,7 +336,7 @@ const CandidateDashboard = () => {
                 </TabsList>
 
                 <TabsContent value="all" className="mt-6">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid md:grid-cols-2 gap-6 space-y-6">
                         {applications.map(app => (
                             <ApplicationCard key={app._id} application={app} />
                         ))}
@@ -429,7 +344,7 @@ const CandidateDashboard = () => {
                 </TabsContent>
 
                 <TabsContent value="pending" className="mt-6">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid md:grid-cols-2 gap-6 space-y-6">
                         {filterApplications('pending').map(app => (
                             <ApplicationCard key={app._id} application={app} />
                         ))}
@@ -437,7 +352,7 @@ const CandidateDashboard = () => {
                 </TabsContent>
 
                 <TabsContent value="reviewed" className="mt-6">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid md:grid-cols-2 gap-6 space-y-6">
                         {filterApplications('reviewed').map(app => (
                             <ApplicationCard key={app._id} application={app} />
                         ))}
@@ -445,7 +360,7 @@ const CandidateDashboard = () => {
                 </TabsContent>
 
                 <TabsContent value="shortlisted" className="mt-6">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid md:grid-cols-2 gap-6 space-y-6">
                         {filterApplications('shortlisted').map(app => (
                             <ApplicationCard key={app._id} application={app} />
                         ))}
@@ -453,7 +368,7 @@ const CandidateDashboard = () => {
                 </TabsContent>
 
                 <TabsContent value="rejected" className="mt-6">
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid md:grid-cols-2 gap-6 space-y-6">
                         {filterApplications('rejected').map(app => (
                             <ApplicationCard key={app._id} application={app} />
                         ))}
