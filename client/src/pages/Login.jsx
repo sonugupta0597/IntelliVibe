@@ -6,17 +6,30 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from 'lucide-react'; // For loading spinner
+import { Loader2, Info } from 'lucide-react'; // For loading spinner
 import { useAuth } from '@/contexts/AuthContext';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 import { motion } from 'framer-motion';
 
 // Define the validation schema with Zod
+const passwordRules = [
+  "At least 8 characters",
+  "At least one uppercase letter (A-Z)",
+  "At least one lowercase letter (a-z)",
+  "At least one number (0-9)",
+  "At least one special character (!@#$%^&*)"
+];
+
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  password: z.string()
+    .min(8, { message: "Password must be at least 8 characters." })
+    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter." })
+    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter." })
+    .regex(/[0-9]/, { message: "Password must contain at least one number." })
+    .regex(/[!@#$%^&*]/, { message: "Password must contain at least one special character (!@#$%^&*)." }),
 });
 
 const Login = () => {
@@ -24,6 +37,7 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState(null);
     const { login } = useAuth(); // Get the login function from context
+    const [showPasswordRules, setShowPasswordRules] = useState(false);
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -66,8 +80,8 @@ const Login = () => {
         >
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle className="text-2xl">Welcome Back!</CardTitle>
-                    <CardDescription>Enter your credentials to access your account.</CardDescription>
+                    <CardTitle className="text-2xl">Welcome to AI Recruiter</CardTitle>
+                    <CardDescription>Sign in to access your AI-powered recruitment dashboard.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <GoogleSignInButton text="Sign in with Google" className="w-full mb-4" />
@@ -90,12 +104,32 @@ const Login = () => {
                                 control={form.control}
                                 name="password"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
+                                    <FormItem className="relative">
+                                        <FormLabel className="flex items-center gap-2">
+                                            Password
+                                            <button
+                                                type="button"
+                                                aria-label="Show password rules"
+                                                className="focus:outline-none"
+                                                onClick={() => setShowPasswordRules((v) => !v)}
+                                            >
+                                                <Info className="w-4 h-4 text-pink-200 hover:text-pink-400" />
+                                            </button>
+                                        </FormLabel>
                                         <FormControl>
                                             <Input type="password" placeholder="••••••••" {...field} />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage className="text-destructive text-red-500 font-semibold mt-1" />
+                                        {showPasswordRules && (
+                                            <div className="absolute z-20 mt-2 bg-gray-900 border border-pink-400 rounded-lg shadow-lg p-4 text-xs text-pink-100 w-64">
+                                                <div className="font-semibold mb-2 text-pink-200">Password must contain:</div>
+                                                <ul className="list-disc pl-5">
+                                                    {passwordRules.map(rule => (
+                                                        <li key={rule}>{rule}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </FormItem>
                                 )}
                             />
@@ -116,7 +150,7 @@ const Login = () => {
                             </Button>
                         </form>
                     </Form>
-                    <p className="text-center text-sm text-muted-foreground mt-6">
+                    <p className="text-center text-sm text-white mt-6">
                         Don't have an account?{' '}
                         <Link to="/register" className="font-semibold text-primary hover:underline">
                             Sign up

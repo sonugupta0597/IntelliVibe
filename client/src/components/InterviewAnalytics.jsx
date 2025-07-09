@@ -253,7 +253,6 @@ const InterviewAnalytics = ({ applications }) => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold">Interview Analytics</h2>
                     <p className="text-muted-foreground">
                         Performance insights from {displayInterviews.length} completed video interview{displayInterviews.length !== 1 ? 's' : ''}
                         {!hasRealData && (

@@ -311,20 +311,20 @@ const ApplicationProgressTracker = ({ application }) => {
                 {/* Employer Interview Details */}
                 {application.employerInterview && (
                     <div className="border-t pt-4">
-                        <h4 className="font-semibold mb-3">Employer Interview Details</h4>
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 className="font-semibold mb-3 text-white">Employer Interview Details</h4>
+                        <div className="backdrop-blur bg-black/40 border border-pink-400 rounded-lg p-4 text-white">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                 <div>
-                                    <span className="font-medium">Date:</span> {new Date(application.employerInterview.scheduledDate).toLocaleDateString()}
+                                    <span className="font-medium text-pink-300">Date:</span> {new Date(application.employerInterview.scheduledDate).toLocaleDateString()}
                                 </div>
                                 <div>
-                                    <span className="font-medium">Time:</span> {application.employerInterview.scheduledTime}
+                                    <span className="font-medium text-pink-300">Time:</span> {application.employerInterview.scheduledTime}
                                 </div>
                                 <div>
-                                    <span className="font-medium">Type:</span> {application.employerInterview.interviewType}
+                                    <span className="font-medium text-pink-300">Type:</span> {application.employerInterview.interviewType}
                                 </div>
                                 <div>
-                                    <span className="font-medium">Status:</span> 
+                                    <span className="font-medium text-pink-300">Status:</span> 
                                     <Badge variant={application.employerInterview.status === 'completed' ? 'default' : 'secondary'} className="ml-2">
                                         {application.employerInterview.status}
                                     </Badge>
@@ -332,10 +332,10 @@ const ApplicationProgressTracker = ({ application }) => {
                                 {application.employerInterview.employerContact && (
                                     <>
                                         <div>
-                                            <span className="font-medium">Contact:</span> {application.employerInterview.employerContact.name}
+                                            <span className="font-medium text-pink-300">Contact:</span> {application.employerInterview.employerContact.name}
                                         </div>
                                         <div>
-                                            <span className="font-medium">Email:</span> {application.employerInterview.employerContact.email}
+                                            <span className="font-medium text-pink-300">Email:</span> {application.employerInterview.employerContact.email}
                                         </div>
                                     </>
                                 )}

@@ -146,7 +146,7 @@ const VideoInterviewPage = () => {
                                 
                                 {/* Preview Section */}
                                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 mb-6">
-                                    <h2 className="text-xl font-bold text-center mb-6 text-gray-800">Interview Preview</h2>
+                                    <h2 className="text-xl font-bold text-center mb-6 text-white">Interview Preview</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {/* AI Bot Preview */}
                                         <div className="text-center space-y-4 bg-white rounded-lg p-6 shadow-sm border border-purple-200">
@@ -161,7 +161,7 @@ const VideoInterviewPage = () => {
                                                     className="w-full h-full"
                                                 />
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-sm text-white">
                                                 Meet your AI interviewer who will guide you through the questions with animated expressions and real-time feedback.
                                             </p>
                                         </div>
@@ -181,18 +181,18 @@ const VideoInterviewPage = () => {
                                                             <div className="text-center p-4">
                                                                 <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
                                                                 <p className="text-destructive font-medium mb-2">Media Error</p>
-                                                                <p className="text-sm text-muted-foreground">{streamError}</p>
+                                                                <p className="text-sm text-white">{streamError}</p>
                                                             </div>
                                                         ) : (
                                                             <div className="text-center">
-                                                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-                                                                <p className="text-sm text-muted-foreground">Initializing camera...</p>
+                                                                <Loader2 className="h-8 w-8 animate-spin text-pink-100 mx-auto mb-2" />
+                                                                <p className="text-sm text-white">Initializing camera...</p>
                                                             </div>
                                                         )}
                                                     </div>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-sm text-white">
                                                 Ensure your camera and microphone are working properly for the best interview experience.
                                             </p>
                                         </div>
@@ -201,13 +201,13 @@ const VideoInterviewPage = () => {
                                 <div className="space-y-4">
                                     {/* Status Indicators */}
                                     <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                        <h3 className="text-sm font-semibold text-gray-700 mb-3 text-center">System Status</h3>
+                                        <h3 className="text-sm font-semibold text-white mb-3 text-center">System Status</h3>
                                         <div className="flex items-center justify-center gap-8 text-sm">
-                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${mediaReady ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${mediaReady ? 'bg-green-100 text-green-700' : 'bg-pink-100 text-pink-700'}`}>
                                                 <div className={`w-3 h-3 rounded-full ${mediaReady ? 'bg-green-500' : 'bg-gray-400'}`} />
                                                 Camera {mediaReady ? 'Ready' : 'Initializing...'}
                                             </div>
-                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${mediaReady ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${mediaReady ? 'bg-green-100 text-green-700' : 'bg-pink-100 text-pink-700'}`}>
                                                 <div className={`w-3 h-3 rounded-full ${mediaReady ? 'bg-green-500' : 'bg-gray-400'}`} />
                                                 Microphone {mediaReady ? 'Ready' : 'Initializing...'}
                                             </div>
@@ -307,12 +307,12 @@ const VideoInterviewPage = () => {
                                     {/* Question Display */}
                                     <div className="w-full max-w-lg text-center space-y-4">
                                         <div className="bg-gradient-to-r from-purple-50 to-blue-50 backdrop-blur rounded-lg p-6 min-h-[120px] flex items-center justify-center border border-purple-200">
-                                            <p className="text-lg leading-relaxed text-gray-800">
+                                            <p className="text-lg leading-relaxed text-white">
                                                 {currentAIQuestion || 'Preparing your interview...'}
                                             </p>
                                         </div>
                                         {flowState === 'AI_THINKING' && (
-                                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                                            <div className="flex items-center justify-center gap-2 text-sm text-white">
                                                 <BrainCircuit className="h-4 w-4 animate-spin" />
                                                 Analyzing...
                                             </div>
@@ -420,7 +420,7 @@ const VideoInterviewPage = () => {
                                             <div className={`flex-1 ${entry.speaker === 'AI' ? 'text-left' : 'text-right'}`}>
                                                 <div className={`inline-block px-4 py-2 rounded-lg max-w-[80%] shadow-sm ${
                                                     entry.speaker === 'AI' 
-                                                        ? 'bg-white border border-purple-200 text-gray-800' 
+                                                        ? 'bg-white border border-purple-200 text-white' 
                                                         : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
                                                 }`}>
                                                     {entry.speaker === 'AI' && entry.questionNumber && (
@@ -432,7 +432,7 @@ const VideoInterviewPage = () => {
                                                         {entry.text}
                                                     </p>
                                                 </div>
-                                                <p className="text-xs text-muted-foreground mt-1 px-2">
+                                                <p className="text-xs text-white mt-1 px-2">
                                                     {entry.timestamp.toLocaleTimeString()}
                                                 </p>
                                             </div>
