@@ -349,35 +349,43 @@ exports.sendApplicationEmail = async (application, template, additionalData = {}
             .populate('job', 'title companyName');
 
         if (!populatedApp) {
-            throw new Error('Application not found');
+            console.error('Application not found for email sending:', application._id);
+            return;
         }
 
-        const emailTemplate = emailTemplates[template];
-        if (!emailTemplate) {
-            throw new Error(`Email template '${template}' not found`);
+        const templateFunction = emailTemplates[template];
+        if (!templateFunction) {
+            console.error(`Email template '${template}' not found`);
+            return;
         }
 
-        // Merge application data with additional data
         const emailData = {
             ...populatedApp.toObject(),
             ...additionalData
         };
 
-        const { subject, html } = emailTemplate(emailData);
+        const emailContent = templateFunction(emailData);
 
         await transporter.sendMail({
             from: `"IntelliVibe" <${process.env.EMAIL_USER}>`,
             to: populatedApp.candidate.email,
-            subject: subject,
-            html: html,
+            subject: emailContent.subject,
+            html: emailContent.html,
         });
 
-        console.log(`Email sent: ${template} to ${populatedApp.candidate.email}`);
-        return true;
+        console.log(`Email sent to ${populatedApp.candidate.email} for application ${application._id}`);
     } catch (error) {
         console.error('Error sending email:', error);
-        // Don't throw - email failure shouldn't break the application flow
-        return false;
+        
+        // Log specific authentication errors
+        if (error.code === 'EAUTH') {
+            console.error('Email authentication failed. Please check EMAIL_USER and EMAIL_PASS environment variables.');
+            console.error('For Gmail, you may need to use an App Password instead of your regular password.');
+        }
+        
+        // Don't throw - email failure shouldn't break the application process
+        // But log it for debugging
+        console.log(`Email sending failed for application ${application._id}, but application process continues.`);
     }
 };
 

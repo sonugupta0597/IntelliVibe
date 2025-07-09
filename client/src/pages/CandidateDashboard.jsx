@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
 import { 
     Briefcase, 
     Clock, 
@@ -156,7 +155,7 @@ const CandidateDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4 relative z-10">
                 {/* AI Score Section */}
-                {application.aiMatchScore !== null && (
+                {application.aiMatchScore !== null && application.aiMatchScore !== undefined ? (
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-white">AI Match Score</span>
@@ -176,6 +175,20 @@ const CandidateDashboard = () => {
                                 {application.aiJustification}
                             </p>
                         )}
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">AI Match Score</span>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                    Pending
+                                </Badge>
+                            </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            AI analysis is being processed...
+                        </p>
                     </div>
                 )}
                 {/* Video Interview Scores Section */}
@@ -207,6 +220,26 @@ const CandidateDashboard = () => {
                                 <div className="text-green-100">Articulation</div>
                             </div>
                         </div>
+                        {/* Show matched skills as badges */}
+                        {application.skillsGapAnalysis.matched && application.skillsGapAnalysis.matched.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                                {application.skillsGapAnalysis.matched.map((skill, idx) => (
+                                    <span key={idx} className="bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-xs border border-green-300">
+                                        {skill}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        {/* Show missing skills as badges */}
+                        {application.skillsGapAnalysis.missing && application.skillsGapAnalysis.missing.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                                {application.skillsGapAnalysis.missing.map((skill, idx) => (
+                                    <span key={idx} className="bg-red-100 text-red-700 rounded-full px-2 py-0.5 text-xs border border-red-300">
+                                        {skill}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
                 {/* Progress Tracker */}
