@@ -31,60 +31,99 @@ const getTextModel = () => {
    // Making the prompt more explicit to ask for an integer.
    const analyzeResume = async (resumeText, jobDetails) => {
     try {
-      const model = getJsonModel();
-   const prompt = `As an expert recruitment AI assistant, analyze the provided resume against the job requirements.
+        const model = getJsonModel();
+        const prompt = `As an expert recruitment AI assistant, analyze the provided resume against the job requirements.
 
-   Your response MUST be a valid JSON object with the following structure:
-   {
-     "matchScore": <An integer percentage value between 0 and 100>,
-     "justification": "<A brief explanation (2-3 sentences) of the score>"
-   }
-   
-   Analyze how well this candidate matches the job requirements. Consider:
-   1. Relevant skills and technologies
-   2. Years of experience
-   3. Educational background
-   4. Previous job roles and responsibilities
-   
-   Job Details:
-   - Title: ${jobDetails.title}
-   - Company: ${jobDetails.company}
-   - Required Skills: ${jobDetails.skills?.join(', ') || 'Not specified'}
-   - Description: ${jobDetails.description}
-   - Experience Required: ${jobDetails.experienceLevel || 'Not specified'}
-   
-   Resume Text:
-   ${resumeText}`;
-   
-       const result = await model.generateContent(prompt);
-       const responseText = result.response.text();
-       const parsedResult = JSON.parse(responseText);
-       
-       // Validate the response structure
-       if (typeof parsedResult.matchScore !== 'number' || !parsedResult.justification) {
-         throw new Error('Invalid response structure from AI.');
-       }
-       
-       // --- START OF THE CRITICAL FIX ---
-       let score = parsedResult.matchScore;
-   
-       // If the AI returns a ratio (e.g., 0.8), convert it to a percentage.
-       if (score <= 1 && score > 0) {
-           score = score * 100;
-       }
-       
-       // Ensure the final score is a whole number and clamped between 0 and 100.
-       parsedResult.matchScore = Math.round(Math.max(0, Math.min(100, score)));
-       // --- END OF THE CRITICAL FIX ---
+Your response MUST be a valid JSON object with the following structure:
+{
+  "matchScore": <An integer percentage value between 0 and 100>,
+  "justification": "<A brief explanation (2-3 sentences) of the score>",
+  "matchedSkills": [<Array of required skills from the job that are clearly present in the resume>],
+  "missingSkills": [<Array of required skills from the job that are NOT found in the resume>]
+}
+
+SCORING GUIDELINES:
+- 90-100%: Perfect match with all required skills and extensive experience
+- 80-89%: Excellent match with most required skills and good experience
+- 70-79%: Good match with many required skills and relevant experience
+- 60-69%: Fair match with some required skills and basic experience
+- 50-59%: Basic match with few required skills
+- 40-49%: Poor match with minimal required skills
+- 0-39%: Very poor match or no relevant skills
+
+Analyze how well this candidate matches the job requirements. Consider:
+1. Relevant skills and technologies (MOST IMPORTANT)
+2. Years of experience
+3. Educational background
+4. Previous job roles and responsibilities
+
+Job Details:
+- Title: ${jobDetails.title}
+- Company: ${jobDetails.company}
+- Required Skills: ${jobDetails.skills?.join(', ') || 'Not specified'}
+- Description: ${jobDetails.description}
+- Experience Required: ${jobDetails.experienceLevel || 'Not specified'}
+
+Resume Text:
+${resumeText}`;
+
+        console.log('Sending AI analysis request with job details:', {
+            title: jobDetails.title,
+            company: jobDetails.company,
+            skills: jobDetails.skills,
+            resumeLength: resumeText.length
+        });
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        
+        console.log('Raw AI response:', responseText);
+        
+        const parsedResult = JSON.parse(responseText);
+        
+        console.log('Parsed AI result:', parsedResult);
+        
+        // Validate the response structure
+        if (typeof parsedResult.matchScore !== 'number' || !parsedResult.justification) {
+            console.error('Invalid AI response structure:', parsedResult);
+            throw new Error('Invalid response structure from AI.');
+        }
+        
+        // Ensure the score is a valid percentage
+        let score = parsedResult.matchScore;
+        
+        // If the AI returns a ratio (e.g., 0.8), convert it to a percentage.
+        if (score <= 1 && score > 0) {
+            score = score * 100;
+        }
+        
+        // Ensure the final score is a whole number and clamped between 0 and 100.
+        parsedResult.matchScore = Math.round(Math.max(0, Math.min(100, score)));
+
+        // Ensure matchedSkills and missingSkills are arrays
+        parsedResult.matchedSkills = Array.isArray(parsedResult.matchedSkills) ? parsedResult.matchedSkills : [];
+        parsedResult.missingSkills = Array.isArray(parsedResult.missingSkills) ? parsedResult.missingSkills : [];
+        
+        console.log('Final AI-generated result:', parsedResult);
          
-       return parsedResult;
+        return parsedResult;
    
-     } catch (error) {
+    } catch (error) {
         console.error('Error in AI resume analysis:', error);
+        console.error('Job details:', jobDetails);
+        console.error('Resume text length:', resumeText?.length || 0);
+        
         if (error.message.includes('SAFETY')) {
             throw new Error('Failed to analyze resume: The content was blocked for safety reasons.');
         }
-        throw new Error('Failed to analyze resume: ' + error.message);
+        
+        // Return a default result if AI fails
+        return {
+            matchScore: 50,
+            justification: "AI analysis was unavailable. Please review manually.",
+            matchedSkills: [],
+            missingSkills: jobDetails.skills || []
+        };
     }
 };
 

@@ -289,6 +289,12 @@ exports.bulkUpdateApplications = async (req, res) => {
             }
         );
 
+        // Send status update email to each candidate
+        const updatedApplications = await Application.find({ _id: { $in: applicationIds }, job: jobId });
+        for (const app of updatedApplications) {
+            await sendApplicationEmail(app, 'status_updated', { status });
+        }
+
         res.json({
             message: `${result.modifiedCount} applications updated successfully`,
             modifiedCount: result.modifiedCount,
@@ -448,6 +454,9 @@ exports.updateApplicationStatus = async (req, res) => {
         application.status = status;
         await application.save();
 
+        // Send status update email
+        await sendApplicationEmail(application, 'status_updated', { status });
+
         res.json({
             message: 'Application status updated successfully',
             application: application,
@@ -464,6 +473,7 @@ exports.getMyCandidateApplications = async (req, res) => {
         const applications = await Application.find({ candidate: req.user._id })
             .select('+employerInterview')
             .populate('job', 'title companyName location skills')
+            .select('aiMatchScore aiJustification aiAnalysisDate skillsGapAnalysis status screeningStage createdAt updatedAt')
             .sort({ createdAt: -1 });
 
         res.json(applications);
