@@ -10,6 +10,7 @@ const Job = require('./models/Job');
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const authRoutes = require('./routes/authRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 // Real-time speech-to-text is now handled via AssemblyAI REST API endpoints.
 // If you want to support real-time streaming, implement a similar socket-to-REST relay using AssemblyAI.
 const aiRoutes = require('./routes/aiRoutes');
@@ -46,12 +47,14 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
+app.use('/api/reports', reportRoutes);
 
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // In production, restrict this to your frontend's URL: "http://localhost:5173"
+    origin: "http://localhost:5173", // Your client's origin
+    methods: ["GET", "POST"]
   },
 });
 console.log('server.js loaded');
@@ -75,30 +78,8 @@ const interviewSessions = new Map();
  * @param {string} applicationId - The ID of the application, to fetch resume details etc.
  * @returns {Promise<string>} The first interview question.
  */
-const generateInitialQuestion = async (applicationId) => {
-  console.log(`[AI] Generating initial question for application: ${applicationId}`);
-  // AI Logic: Fetch candidate's resume using applicationId, send to Gemini, get question.
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async call
-  return "Tell me about a challenging project you've worked on and what made it so."
-};
+const { generateInitialQuestion, generateFollowUpQuestion, analyzeInterviewTranscript } = require('./services/videoAiService');
 
-/**
- * Mocks a Gemini API call to generate a follow-up question.
- * @param {string} lastAnswer - The candidate's full transcribed answer.
- * @returns {Promise<string>} A relevant follow-up question.
- */
-const generateFollowUpQuestion = async (lastAnswer) => {
-  console.log(`[AI] Generating follow-up for answer: "${lastAnswer.substring(0, 50)}..."`);
-  // AI Logic: Send the transcript to Gemini, get a contextual follow-up.
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async call
-  if (lastAnswer.toLowerCase().includes("teamwork")) {
-    return "That's interesting. Can you elaborate on how you handled disagreements within the team during that project?";
-  }
-  return "Thank you for sharing. What was the most important lesson you learned from that experience?";
-};
-
-
-// -- S O C K E T. I O  L O G I C --
 io.on('connection', (socket) => {
   console.log(`[Socket] User connected: ${socket.id}`);
   let fullTranscript = '';
@@ -107,6 +88,18 @@ io.on('connection', (socket) => {
   const getInterviewState = () => interviewSessions.get(socket.id);
   const setInterviewState = (newState) => interviewSessions.set(socket.id, { ...getInterviewState(), ...newState });
 
+  socket.on('join-room', (applicationId) => {
+    console.log(`[Socket] User ${socket.id} joined room for application: ${applicationId}`);
+    // Initialize the state for this new interview session
+    interviewSessions.set(socket.id, {
+      applicationId,
+      questionCount: 0,
+      fullTranscript: '',
+    });
+    // Notify the client that the session is ready
+    socket.emit('session-ready');
+  });
+  
   // --- Live Audio Streaming and Transcription ---
   socket.on('start-audio-stream', () => {
     if (recognizeStream) {
@@ -147,35 +140,59 @@ io.on('connection', (socket) => {
   // Real-time speech-to-text is now handled via AssemblyAI REST API endpoints.
   // If you want to support real-time streaming, implement a similar socket-to-REST relay using AssemblyAI.
 
-  const handleNextQuestion = async () => {
-    const state = getInterviewState();
-    if (state.questionCount >= 5) { // End interview after 5 questions
-        console.log(`[Interview] Ending interview for ${socket.id}`);
-        socket.emit('interview-finished');
-        interviewSessions.delete(socket.id);
-        return;
-    }
+  const { generateInitialQuestion, generateFollowUpQuestion, analyzeInterviewTranscript } = require('./services/videoAiService');
 
-    const nextQuestion = await generateFollowUpQuestion(state.fullTranscript);
-    setInterviewState({
-        questionCount: state.questionCount + 1,
-        fullTranscript: '', // Reset transcript for the new answer
-    });
-    
-    console.log(`[Interview] Sending question ${getInterviewState().questionCount} to ${socket.id}`);
-    socket.emit('new-question', { question: nextQuestion, questionNumber: getInterviewState().questionCount });
-  };
+// ... (rest of the file)
 
+const handleNextQuestion = async () => {
+  const state = getInterviewState();
+  if (!state) {
+    console.error(`[Error] handleNextQuestion called but no session found for ${socket.id}`);
+    socket.emit('error', { message: 'Your session has expired. Please refresh the page.' });
+    return;
+  }
+  if (state.questionCount >= 5) { // End interview after 5 questions
+      console.log(`[Interview] Ending interview for ${socket.id}`);
+      
+      // Analyze the full transcript
+      const analysis = await analyzeInterviewTranscript(state.fullTranscript, state.jobDetails);
 
-  socket.on('join-room', (applicationId) => {
-    console.log(`[Socket] User ${socket.id} joined room for application: ${applicationId}`);
-    // Initialize the state for this new interview session
-    interviewSessions.set(socket.id, {
-      applicationId,
-      questionCount: 0,
-      fullTranscript: '',
-    });
+      // Update the application in the database
+      try {
+          const application = await Application.findById(state.applicationId);
+          if (application) {
+              application.videoAnalysisReport = {
+                  overallScore: analysis.score,
+                  summary: analysis.summary,
+                  // You can add more fields here if your analysis provides them
+              };
+              application.status = analysis.status;
+              application.screeningStage = analysis.status === 'AI Interview Passed' ? 'video_completed' : 'video_failed';
+              await application.save();
+              console.log(`[DB] Application ${state.applicationId} updated with interview analysis.`);
+          }
+      } catch (error) {
+          console.error(`[DB] Error updating application ${state.applicationId}:`, error);
+      }
+
+      socket.emit('interview-finished', { analysis });
+      interviewSessions.delete(socket.id);
+      return;
+  }
+
+  // FIX: Pass both transcriptHistory AND jobDetails to generateFollowUpQuestion
+  const nextQuestion = await generateFollowUpQuestion(state.fullTranscript, state.jobDetails);
+  setInterviewState({
+      ...state,
+      questionCount: state.questionCount + 1,
+      fullTranscript: '', // Reset transcript for the new answer
   });
+  
+  console.log(`[Interview] Sending question ${getInterviewState().questionCount} to ${socket.id}`);
+  socket.emit('new-question', { question: nextQuestion, questionNumber: getInterviewState().questionCount });
+};
+
+// ... (rest of the file)
 
   socket.on('start-interview', async () => {
     console.log(`[Interview] Starting interview for ${socket.id}`);
@@ -185,17 +202,50 @@ io.on('connection', (socket) => {
         return;
     }
     
-    const firstQuestion = await generateInitialQuestion(state.applicationId);
-    setInterviewState({ questionCount: 1 });
+    // Fetch job details and resume to generate a better initial question
+    try {
+        const application = await Application.findById(state.applicationId).populate('job');
+        if (application) {
+            const jobDetails = application.job;
+            const resumePath = path.join(__dirname, application.resumeUrl.startsWith('uploads') ? '' : '..', application.resumeUrl);
 
-    console.log(`[Interview] Sending question 1 to ${socket.id}`);
-    socket.emit('new-question', { question: firstQuestion, questionNumber: 1 });
+            const dataBuffer = await fs.readFile(resumePath);
+            const data = await pdfParse(dataBuffer);
+            const resumeText = data.text;
+
+            const firstQuestion = await generateInitialQuestion(jobDetails, resumeText);
+            
+            setInterviewState({
+                ...state,
+                questionCount: 1,
+                jobDetails: {
+                    title: jobDetails.title,
+                    skills: jobDetails.skills,
+                },
+            });
+
+            console.log(`[Interview] Sending question 1 to ${socket.id}`);
+            socket.emit('new-question', { question: firstQuestion, questionNumber: 1 });
+        } else {
+            console.error(`[Error] Application not found for ID: ${state.applicationId}`);
+            socket.emit('error', { message: 'Application not found.' });
+        }
+    } catch (error) {
+        console.error('[Error] CRITICAL: Could not start interview.', {
+            socketId: socket.id,
+            applicationId: state ? state.applicationId : 'N/A',
+            errorMessage: error.message,
+            errorStack: error.stack,
+        });
+        socket.emit('error', { message: 'Failed to start interview. Check server logs for details.' });
+    }
   });
 
   socket.on('end-answer', (data) => {
+    const state = getInterviewState();
     // Accept transcript from client and store it for follow-up questions
     if (data && data.transcript) {
-      setInterviewState({ fullTranscript: data.transcript.trim() });
+      setInterviewState({ ...state, fullTranscript: data.transcript.trim() });
     }
     console.log(`[Interview] User ${socket.id} manually ended their answer.`);
     // Move to next question after a short delay

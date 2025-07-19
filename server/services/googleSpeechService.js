@@ -1,7 +1,12 @@
 const fs = require('fs');
 const speech = require('@google-cloud/speech');
+const path = require('path');
 
-const client = new speech.SpeechClient();
+// Explicitly load the credentials file
+const credentialsPath = path.join(__dirname, '..', 'google-credentials.json');
+const client = new speech.SpeechClient({
+  keyFilename: credentialsPath
+});
 
 async function transcribeAudioFile(filePath) {
   const file = fs.readFileSync(filePath);

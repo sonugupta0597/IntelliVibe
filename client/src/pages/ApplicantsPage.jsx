@@ -9,10 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import AIInterviewReport from '@/components/AIInterviewReport';
+import ReportDashboard from '@/components/ReportDashboard';
+import VideoInterviewReport from '@/components/VideoInterviewReport';
 import { 
     ArrowLeft, ExternalLink, TrendingUp, Users, CheckCircle, 
     XCircle, Clock, AlertCircle, Mail, Filter, BarChart3,
-    Zap, BrainCircuit
+    Zap, BrainCircuit, FileText, Eye
 } from 'lucide-react';
 
 const ApplicantsPage = () => {
@@ -24,6 +28,9 @@ const ApplicantsPage = () => {
     const [sortBy, setSortBy] = useState('aiScore');
     const [filterBy, setFilterBy] = useState('all');
     const [selectedApplicants, setSelectedApplicants] = useState([]);
+    const [activeView, setActiveView] = useState('applicants'); // 'applicants' or 'reports'
+    const [selectedApplicationForReport, setSelectedApplicationForReport] = useState(null);
+    const [showVideoReport, setShowVideoReport] = useState(false);
     const { userInfo } = useAuth();
 
     useEffect(() => {
@@ -134,6 +141,10 @@ const ApplicantsPage = () => {
                 return <XCircle className="h-4 w-4 text-red-500" />;
             case 'reviewed':
                 return <Clock className="h-4 w-4 text-blue-500" />;
+            case 'AI Interview Passed':
+                return <CheckCircle className="h-4 w-4 text-green-500" />;
+            case 'AI Interview Failed':
+                return <XCircle className="h-4 w-4 text-red-500" />;
             default:
                 return <Clock className="h-4 w-4 text-gray-500" />;
         }
@@ -145,6 +156,7 @@ const ApplicantsPage = () => {
         if (filterBy === 'auto-qualified') return app.status === 'shortlisted' && app.autoProcessed;
         if (filterBy === 'auto-rejected') return app.status === 'rejected' && app.autoProcessed;
         if (filterBy === 'high-match') return app.aiMatchScore >= 70;
+        if (filterBy === 'ai-interview-passed') return app.status === 'AI Interview Passed';
         return app.status === filterBy;
     });
 
@@ -179,25 +191,49 @@ const ApplicantsPage = () => {
                 Back to Dashboard
             </Link>
 
-            <div>
-                <h1 className="text-3xl font-bold">Applicants for {jobInfo?.title}</h1>
-                <p className="text-muted-foreground mt-2">
-                    {jobInfo?.companyName} • Review and manage applications
-                </p>
+            <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-3xl font-bold">Applicants for {jobInfo?.title}</h1>
+                    <p className="text-muted-foreground mt-2">
+                        {jobInfo?.companyName} • Review and manage applications
+                    </p>
+                </div>
+                
+                {/* View Toggle */}
+                <div className="flex space-x-2">
+                    <Button
+                        variant={activeView === 'applicants' ? 'default' : 'outline'}
+                        onClick={() => setActiveView('applicants')}
+                        className="flex items-center"
+                    >
+                        <Users className="h-4 w-4 mr-2" />
+                        Applicants
+                    </Button>
+                    <Button
+                        variant={activeView === 'reports' ? 'default' : 'outline'}
+                        onClick={() => setActiveView('reports')}
+                        className="flex items-center"
+                    >
+                        <FileText className="h-4 w-4 mr-2" />
+                        AI Reports
+                    </Button>
+                </div>
             </div>
 
-            {/* Auto-Qualification Alert */}
-            {stats && (stats.autoShortlisted > 0 || stats.autoRejected > 0) && (
-                <Alert>
-                    <Zap className="h-4 w-4" />
-                    <AlertTitle>AI Auto-Qualification Active</AlertTitle>
-                    <AlertDescription>
-                        {stats.autoShortlisted > 0 && `${stats.autoShortlisted} candidates auto-shortlisted. `}
-                        {stats.autoRejected > 0 && `${stats.autoRejected} candidates auto-rejected. `}
-                        Email notifications have been sent automatically.
-                    </AlertDescription>
-                </Alert>
-            )}
+            {activeView === 'applicants' && (
+                <>
+                    {/* Auto-Qualification Alert */}
+                    {stats && (stats.autoShortlisted > 0 || stats.autoRejected > 0) && (
+                        <Alert>
+                            <Zap className="h-4 w-4" />
+                            <AlertTitle>AI Auto-Qualification Active</AlertTitle>
+                            <AlertDescription>
+                                {stats.autoShortlisted > 0 && `${stats.autoShortlisted} candidates auto-shortlisted. `}
+                                {stats.autoRejected > 0 && `${stats.autoRejected} candidates auto-rejected. `}
+                                Email notifications have been sent automatically.
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
             {/* Statistics Cards */}
             <div className="grid gap-6 md:grid-cols-5">
@@ -262,6 +298,7 @@ const ApplicantsPage = () => {
                                     <SelectItem value="auto-qualified">Auto-Qualified</SelectItem>
                                     <SelectItem value="auto-rejected">Auto-Rejected</SelectItem>
                                     <SelectItem value="high-match">High Match (70%+)</SelectItem>
+                                    <SelectItem value="ai-interview-passed">AI Interview Passed</SelectItem>
                                     <SelectItem value="pending">Pending</SelectItem>
                                     <SelectItem value="reviewed">Reviewed</SelectItem>
                                     <SelectItem value="shortlisted">Shortlisted</SelectItem>
@@ -399,11 +436,40 @@ const ApplicantsPage = () => {
                                                             <SelectItem value="reviewed">Reviewed</SelectItem>
                                                             <SelectItem value="shortlisted">Shortlisted</SelectItem>
                                                             <SelectItem value="rejected">Rejected</SelectItem>
+                                                            <SelectItem value="AI Interview Passed">AI Interview Passed</SelectItem>
+                                                            <SelectItem value="AI Interview Failed">AI Interview Failed</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
+                                                {app.videoAnalysisReport && (
+                                                    <>
+                                                        <Dialog>
+                                                            <DialogTrigger asChild>
+                                                                <Button variant="outline" size="sm">Quick View</Button>
+                                                            </DialogTrigger>
+                                                            <DialogContent>
+                                                                <DialogHeader>
+                                                                    <DialogTitle>AI Interview Report for {app.candidate.firstName}</DialogTitle>
+                                                                </DialogHeader>
+                                                                <AIInterviewReport report={app.videoAnalysisReport} />
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                        <Button 
+                                                            variant="default" 
+                                                            size="sm"
+                                                            className="ml-2"
+                                                            onClick={() => {
+                                                                setSelectedApplicationForReport(app._id);
+                                                                setShowVideoReport(true);
+                                                            }}
+                                                        >
+                                                            <Eye className="h-4 w-4 mr-1" />
+                                                            Full Report
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button asChild variant="ghost" size="sm">
                                                     <a 
                                                         href={`http://localhost:5001/${app.resumeUrl}`} 
@@ -428,6 +494,23 @@ const ApplicantsPage = () => {
                     </div>
                 </CardContent>
             </Card>
+                </>
+            )}
+
+            {activeView === 'reports' && (
+                <ReportDashboard jobId={jobId} />
+            )}
+
+            {/* Video Interview Report Modal */}
+            {showVideoReport && selectedApplicationForReport && (
+                <VideoInterviewReport
+                    applicationId={selectedApplicationForReport}
+                    onClose={() => {
+                        setShowVideoReport(false);
+                        setSelectedApplicationForReport(null);
+                    }}
+                />
+            )}
         </div>
     );
 };

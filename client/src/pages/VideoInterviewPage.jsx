@@ -63,7 +63,7 @@ const findSupportedMimeType = () => {
 
 
 // --- UI Components (No changes needed, included for completeness) ---
-const Lobby = ({ onStartInterview, localStream, isCameraReady }) => (
+const Lobby = ({ onStartInterview, localStream, isCameraReady, isSocketReady }) => (
     <div className="w-full max-w-2xl mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl text-center relative overflow-hidden">
       {/* Gradient Overlay */}
       <div className="absolute inset-0 pointer-events-none opacity-30" style={{background: 'linear-gradient(120deg, #e91e63 0%, #9c27b0 100%)'}} />
@@ -72,7 +72,9 @@ const Lobby = ({ onStartInterview, localStream, isCameraReady }) => (
       <div className="w-full aspect-video bg-black/60 rounded-md mb-6 overflow-hidden">
         {isCameraReady ? <VideoPlayer stream={localStream} muted={true} /> : <div className="w-full h-full flex items-center justify-center"><p className="text-white">Waiting for camera permissions...</p></div>}
       </div>
-      <button onClick={onStartInterview} disabled={!isCameraReady} className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:from-pink-600 hover:to-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300">Start Interview</button>
+      <button onClick={onStartInterview} disabled={!isCameraReady || !isSocketReady} className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:from-pink-600 hover:to-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300">
+        {isSocketReady ? 'Start Interview' : 'Connecting...'}
+      </button>
     </div>
 );
 const InterviewScreen = ({ localStream, currentQuestion, questionNumber, liveTranscript, onEndAnswer }) => (
@@ -173,6 +175,7 @@ const VideoInterviewPage = () => {
     const [questionNumber, setQuestionNumber] = useState(0);
     const [liveTranscript, setLiveTranscript] = useState('');
     const transcriptBufferRef = useRef('');
+    const [isSocketReady, setIsSocketReady] = useState(false);
     
     // Debug effect to track liveTranscript changes
     useEffect(() => {
@@ -230,6 +233,11 @@ const VideoInterviewPage = () => {
             socket.emit('join-room', applicationId);
         });
 
+        socket.on('session-ready', () => {
+            console.log('[Socket] <== Session is ready.');
+            setIsSocketReady(true);
+        });
+
         socket.on('new-question', (data) => {
             const { question, questionNumber } = data;
             console.log(`[Socket] <== Received question #${questionNumber}: "${question}"`);
@@ -266,9 +274,9 @@ const VideoInterviewPage = () => {
             setInterviewState('Finished');
         });
 
-        socket.on('error', (errorMessage) => {
-            console.error('[Socket] <== Server error:', errorMessage);
-            alert(`Error: ${errorMessage}`);
+        socket.on('error', (errorData) => {
+            console.error('[Socket] <== Server error:', errorData);
+            alert(`An error occurred: ${errorData.message}`);
         });
 
         socket.on('disconnect', () => console.log('[Socket] ==> Disconnected from server.'));
@@ -385,7 +393,7 @@ const VideoInterviewPage = () => {
         switch (interviewState) {
             case 'Interviewing': return <InterviewScreen localStream={localStreamRef.current} currentQuestion={currentQuestion} questionNumber={questionNumber} liveTranscript={liveTranscript} onEndAnswer={handleEndAnswer} />;
             case 'Finished': return <Lobby />;
-            default: return <Lobby onStartInterview={handleStartInterview} localStream={localStreamRef.current} isCameraReady={isCameraReady} />;
+            default: return <Lobby onStartInterview={handleStartInterview} localStream={localStreamRef.current} isCameraReady={isCameraReady} isSocketReady={isSocketReady} />;
         }
     };
 

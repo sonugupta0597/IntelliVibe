@@ -260,7 +260,7 @@ const applicationSchema = new mongoose.Schema({
     // High-level, recruiter-facing status. Should be updated based on screeningStage.
     status: {
         type: String,
-        enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'selected_for_employer', 'hired'],
+        enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'selected_for_employer', 'hired', 'AI Interview Passed', 'AI Interview Failed'],
         default: 'pending',
     },
     
