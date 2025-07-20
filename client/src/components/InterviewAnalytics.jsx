@@ -249,7 +249,7 @@ const InterviewAnalytics = ({ applications }) => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -383,7 +383,7 @@ const InterviewAnalytics = ({ applications }) => {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {displayInterviews.slice(0, 5).map((app, index) => (
+                        {displayInterviews.slice(0, 5).map((app) => (
                             <div key={app._id} className="border rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <div>

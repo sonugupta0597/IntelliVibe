@@ -277,7 +277,6 @@ const applicationSchema = new mongoose.Schema({
             'video_pending',
             'video_in_progress',
             'video_completed',
-            'video_failed',
             'final_review',
             'selected_for_employer',
             'employer_scheduled',

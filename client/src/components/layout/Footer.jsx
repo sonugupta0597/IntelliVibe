@@ -1,150 +1,63 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { 
-    MapPin, 
-    Building2, 
-    DollarSign, 
-    Clock, 
-    Briefcase,
-    Calendar,
-    Users,
-    Sparkles
-} from 'lucide-react';
+import { Github, Linkedin, Twitter } from 'lucide-react';
 
-const CardFooter = ({ job }) => {
-    // Calculate days until expiry
-    const getDaysUntilExpiry = (expiryDate) => {
-        if (!expiryDate) return null;
-        const today = new Date();
-        const expiry = new Date(expiryDate);
-        const diffTime = expiry - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
-    };
-
-    const daysLeft = job.expiryDate ? getDaysUntilExpiry(job.expiryDate) : null;
-
-    // Format salary for display
-    const formatSalary = (salary) => {
-        if (!salary) return 'Competitive';
-        return salary;
-    };
-
-    // Get job type badge variant
-    const getJobTypeBadgeVariant = (jobType) => {
-        switch (jobType) {
-            case 'Full-time':
-                return 'default';
-            case 'Part-time':
-                return 'secondary';
-            case 'Contract':
-                return 'outline';
-            case 'Internship':
-                return 'secondary';
-            default:
-                return 'default';
-        }
-    };
-
-    return (
-        <div className="space-y-4 p-6 pt-0">
-            {/* Company and Location */}
-            <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    <span className="font-medium">{job.companyName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{job.location}</span>
-                </div>
+const Footer = () => {
+  return (
+    <footer className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-100 text-gray-800 py-16 mt-auto rounded-t-2xl shadow-inner border-t border-blue-100">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid md:grid-cols-4 gap-8 mb-8">
+          {/* Company Info */}
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow text-white font-bold text-2xl">IV</div>
+              <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent tracking-tight">IntelliVibe</span>
             </div>
-
-            {/* Skills */}
-            {job.skills && job.skills.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                    {job.skills.slice(0, 3).map((skill, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                            {skill}
-                        </Badge>
-                    ))}
-                    {job.skills.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                            +{job.skills.length - 3} more
-                        </Badge>
-                    )}
-                </div>
-            )}
-
-            {/* Job Details Grid */}
-            <div className="grid grid-cols-2 gap-3 py-3 border-y">
-                {/* Salary */}
-                <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                        <p className="text-xs text-muted-foreground">Salary</p>
-                        <p className="text-sm font-medium truncate">{formatSalary(job.salary)}</p>
-                    </div>
-                </div>
-
-                {/* Job Type */}
-                <div className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                        <p className="text-xs text-muted-foreground">Type</p>
-                        <Badge 
-                            variant={getJobTypeBadgeVariant(job.jobType)} 
-                            className="text-xs px-2 py-0"
-                        >
-                            {job.jobType || 'Full-time'}
-                        </Badge>
-                    </div>
-                </div>
+            <p className="text-gray-600 mb-4 max-w-md font-medium">
+              Revolutionizing recruitment with AI-powered screening, automated interviews, and intelligent candidate matching.
+            </p>
+            <div className="flex gap-4">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors">
+                <Github className="h-6 w-6" />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors">
+                <Linkedin className="h-6 w-6" />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 transition-colors">
+                <Twitter className="h-6 w-6" />
+              </a>
             </div>
+          </div>
 
-            {/* Bottom Info */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                {/* Posted Date */}
-                <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>
-                        Posted {new Date(job.createdAt).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric' 
-                        })}
-                    </span>
-                </div>
+          {/* Quick Links */}
+          <div>
+            <h3 className="font-semibold mb-4 text-blue-800">Product</h3>
+            <ul className="space-y-2 text-blue-700">
+              <li><button className="hover:text-blue-900 transition-colors">Features</button></li>
+              <li><button className="hover:text-blue-900 transition-colors">Pricing</button></li>
+              <li><button className="hover:text-blue-900 transition-colors">API</button></li>
+              <li><button className="hover:text-blue-900 transition-colors">Documentation</button></li>
+            </ul>
+          </div>
 
-                {/* Expiry Warning or Active Status */}
-                {daysLeft !== null && daysLeft > 0 ? (
-                    <div className={`flex items-center gap-1 ${daysLeft <= 7 ? 'text-orange-600' : ''}`}>
-                        <Clock className="h-3 w-3" />
-                        <span>
-                            {daysLeft <= 7 
-                                ? `Expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`
-                                : 'Active'
-                            }
-                        </span>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-1 text-green-600">
-                        <Sparkles className="h-3 w-3" />
-                        <span>Active</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Interview Duration Badge (if specified) */}
-            {job.interviewDuration && (
-                <div className="flex items-center gap-2 pt-2 border-t">
-                    <Badge variant="secondary" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {job.interviewDuration} min interview
-                    </Badge>
-                </div>
-            )}
+          {/* Support */}
+          <div>
+            <h3 className="font-semibold mb-4 text-blue-800">Support</h3>
+            <ul className="space-y-2 text-blue-700">
+              <li><button className="hover:text-blue-900 transition-colors">Help Center</button></li>
+              <li><button className="hover:text-blue-900 transition-colors">Contact Us</button></li>
+              <li><button className="hover:text-blue-900 transition-colors">Privacy Policy</button></li>
+              <li><button className="hover:text-blue-900 transition-colors">Terms of Service</button></li>
+            </ul>
+          </div>
         </div>
-    );
+
+        {/* Footer Bottom */}
+        <div className="border-t border-blue-100 pt-8 text-center text-blue-700">
+          <p>© {new Date().getFullYear()} IntelliVibe. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  );
 };
 
-export default CardFooter;
+export default Footer;

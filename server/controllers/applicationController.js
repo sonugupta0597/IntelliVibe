@@ -601,71 +601,27 @@ exports.submitQuizAnswers = async (req, res) => {
         application.quizCompletedAt = new Date();
         application.quizResults = detailedResults;
 
-        if (score >= quiz.passingScore) {
-            // Passed quiz - proceed to video interview
-            application.screeningStage = 'video_pending';
-            application.stageHistory.push({
-                stage: 'quiz',
-                timestamp: new Date(),
-                status: 'passed',
-                score: score,
-                notes: 'Qualified for video interview'
-            });
+        // Always proceed to video_pending if quiz is completed
+        application.screeningStage = 'video_pending';
+        application.stageHistory.push({
+            stage: 'quiz',
+            timestamp: new Date(),
+            status: 'completed',
+            score: score,
+            notes: 'Quiz completed, proceeding to video interview'
+        });
 
-            // Calculate progress percentage
-            application.calculateProgressPercentage();
+        // Calculate progress percentage
+        application.calculateProgressPercentage();
 
-            // Send video interview invitation
-            // await sendApplicationEmail(application, 'video_invitation');
+        await application.save();
 
-            await application.save();
-
-            res.json({
-                success: true,
-                passed: true,
-                score: score,
-                passingScore: quiz.passingScore,
-                message: 'Congratulations! You passed the skills assessment.',
-                nextStep: {
-                    stage: 'video_interview',
-                    message: 'You will receive an email invitation for the video interview stage.'
-                },
-                progressPercentage: application.progressPercentage
-            });
-
-        } else {
-            // Failed quiz
-            application.screeningStage = 'quiz_failed';
-            application.status = 'rejected';
-            application.stageHistory.push({
-                stage: 'quiz',
-                timestamp: new Date(),
-                status: 'failed',
-                score: score,
-                notes: 'Did not meet passing score'
-            });
-
-            // Calculate progress percentage
-            application.calculateProgressPercentage();
-
-            await application.save();
-
-            // Send rejection email
-            // await sendApplicationEmail(application, 'quiz_failed', {
-            //     score: score,
-            //     passingScore: quiz.passingScore
-            // });
-
-            res.json({
-                success: false,
-                passed: false,
-                score: score,
-                passingScore: quiz.passingScore,
-                message: 'Unfortunately, you did not pass the skills assessment.',
-                feedback: 'Consider improving your skills in the tested areas and apply for other positions.',
-                progressPercentage: application.progressPercentage
-            });
-        }
+        res.json({
+            success: true,
+            message: 'Quiz completed successfully. Proceeding to video interview stage.',
+            score: score,
+            progressPercentage: application.progressPercentage
+        });
 
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -807,46 +763,14 @@ exports.completeVideoInterview = async (req, res) => {
         // Calculate overall score
         application.calculateOverallScore();
         
-        // Determine if candidate qualifies for employer interview
-        const VIDEO_THRESHOLD = 70; // Minimum video interview score
-        const OVERALL_THRESHOLD = 75; // Minimum overall score
-        
-        if (videoAnalysisReport.overallScore >= VIDEO_THRESHOLD && application.overallScore >= OVERALL_THRESHOLD) {
-            // Qualify for employer interview
-            application.screeningStage = 'selected_for_employer';
-            application.status = 'selected_for_employer';
-            application.stageHistory.push({
-                stage: 'video_interview',
-                timestamp: new Date(),
-                status: 'passed',
-                score: videoAnalysisReport.overallScore,
-                notes: 'Qualified for employer interview'
-            });
-            
-            // Send selection email to candidate
-            // await sendApplicationEmail(application, 'selected_for_employer');
-            
-            // Send notification to employer
-            await sendEmployerNotification(application, 'candidate_selected');
-            
-        } else {
-            // Failed video interview
-            application.screeningStage = 'video_failed';
-            application.status = 'rejected';
-            application.stageHistory.push({
-                stage: 'video_interview',
-                timestamp: new Date(),
-                status: 'failed',
-                score: videoAnalysisReport.overallScore,
-                notes: 'Did not meet video interview requirements'
-            });
-            
-            // Send rejection email
-            // await sendApplicationEmail(application, 'video_failed', {
-            //     score: videoAnalysisReport.overallScore,
-            //     feedback: videoAnalysisReport.feedback
-            // });
-        }
+        // Always set to video_completed, regardless of score
+        application.stageHistory.push({
+            stage: 'video_interview',
+            timestamp: new Date(),
+            status: 'completed',
+            score: videoAnalysisReport.overallScore,
+            notes: 'Video interview completed and analyzed'
+        });
 
         // Calculate progress percentage
         application.calculateProgressPercentage();
@@ -858,7 +782,6 @@ exports.completeVideoInterview = async (req, res) => {
             message: 'Video interview completed successfully',
             videoScore: videoAnalysisReport.overallScore,
             overallScore: application.overallScore,
-            qualifiedForEmployer: application.screeningStage === 'selected_for_employer',
             progressPercentage: application.progressPercentage
         });
 

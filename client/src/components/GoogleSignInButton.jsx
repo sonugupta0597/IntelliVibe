@@ -20,7 +20,7 @@ const GoogleSignInButton = ({ text = 'Sign in with Google', className = '', role
       } else {
         window.location.href = '/candidate/dashboard';
       }
-    } catch (err) {
+    } catch (error) {
       alert('Google sign-in failed.');
     }
   };

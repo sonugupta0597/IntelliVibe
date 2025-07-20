@@ -183,9 +183,7 @@ const ApplicantsPage = () => {
     }
 
     return (
-        <div 
-            className="space-y-6"
-        >
+        <div className="min-h-screen bg-gray-50 p-6 md:p-10">
             <Link to="/employer/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard

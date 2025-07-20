@@ -88,12 +88,6 @@ const VideoInterviewReport = ({ applicationId, onClose }) => {
         return 'text-red-600';
     };
 
-    const getScoreBgColor = (score) => {
-        if (score >= 80) return 'bg-green-100';
-        if (score >= 65) return 'bg-yellow-100';
-        return 'bg-red-100';
-    };
-
     const getRecommendationIcon = (recommendation) => {
         if (recommendation.includes('Highly recommended')) return <CheckCircle className="text-green-600" />;
         if (recommendation.includes('Not recommended')) return <XCircle className="text-red-600" />;

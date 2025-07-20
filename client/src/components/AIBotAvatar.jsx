@@ -188,23 +188,6 @@ const AIBotAvatar = ({
                 </div>
             </div>
 
-            {/* Speech bubble for question */}
-            {isSpeaking && question && (
-                <motion.div
-                    className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg p-3 shadow-lg border border-gray-200 max-w-xs"
-                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    <div className="text-sm text-white leading-relaxed">
-                        {question}
-                    </div>
-                    {/* Speech bubble arrow */}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" />
-                </motion.div>
-            )}
-
             {/* Thinking indicator */}
             {isThinking && (
                 <motion.div

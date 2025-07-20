@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Bot, BarChart2 } from 'lucide-react';
+import { FileText, Bot, BarChart2, ArrowRight, CheckCircle, Users, Target, Zap, Star, Sparkles, Brain, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Animation variants for Framer Motion
@@ -27,636 +27,359 @@ const itemVariants = {
 
 const Home = () => {
   const navigate = useNavigate();
+  
   const features = [
     {
-      icon: <FileText className="h-8 w-8 text-white" />,
+      icon: <Brain className="h-8 w-8 text-blue-600" />,
       title: "AI Resume Screening",
-      description: "Advanced AI instantly analyzes resumes and job descriptions to find the perfect fit, saving you hours of manual work."
+      description: "Advanced AI instantly analyzes resumes and job descriptions to find the perfect fit, saving you hours of manual work.",
+      gradient: "from-blue-500 to-cyan-500"
     },
     {
-      icon: <Bot className="h-8 w-8 text-white" />,
+      icon: <Bot className="h-8 w-8 text-purple-600" />,
       title: "Automated AI Interviews",
-      description: "Conduct unbiased, automated video interviews that assess skills, experience, and communication abilities using AI."
+      description: "Conduct unbiased, automated video interviews that assess skills, experience, and communication abilities using AI.",
+      gradient: "from-purple-500 to-pink-500"
     },
     {
-      icon: <BarChart2 className="h-8 w-8 text-white" />,
+      icon: <BarChart2 className="h-8 w-8 text-emerald-600" />,
       title: "AI Analytics & Insights",
-      description: "Receive comprehensive candidate reports with AI-powered performance scores, transcripts, and fraud detection."
+      description: "Receive comprehensive candidate reports with AI-powered performance scores, transcripts, and fraud detection.",
+      gradient: "from-emerald-500 to-teal-500"
     }
   ];
 
-  useEffect(() => {
-    // Light scattering effects
-    let effectsActive = true;
-    let lastScrollTime = 0;
-
-    // Create light particle anywhere on screen
-    const createLightParticle = () => {
-      const particle = document.createElement('div');
-      particle.style.cssText = `
-        position: fixed;
-        width: 4px;
-        height: 4px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(233, 30, 99, 0.4) 100%);
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 999;
-        opacity: 0;
-        left: ${Math.random() * window.innerWidth}px;
-        top: ${Math.random() * window.innerHeight}px;
-        animation: scatterParticle 3s ease-out forwards;
-        animation-delay: ${Math.random() * 300}ms;
-      `;
-      
-      document.body.appendChild(particle);
-      
-      setTimeout(() => {
-        if (particle.parentNode) {
-          particle.parentNode.removeChild(particle);
-        }
-      }, 3500);
-    };
-
-    // Create light ray anywhere on screen
-    const createLightRay = () => {
-      const ray = document.createElement('div');
-      const randomRotation = (Math.random() - 0.5) * 60;
-      const randomDrift = (Math.random() - 0.5) * 100;
-      
-      ray.style.cssText = `
-        position: fixed;
-        width: 2px;
-        height: 80px;
-        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6) 0%, rgba(233, 30, 99, 0.4) 50%, transparent 100%);
-        pointer-events: none;
-        z-index: 999;
-        opacity: 0;
-        left: ${Math.random() * window.innerWidth}px;
-        top: ${Math.random() * window.innerHeight}px;
-        transform-origin: center;
-        animation: lightRayScatter 2s ease-out forwards;
-        animation-delay: ${Math.random() * 200}ms;
-        --rotation: ${randomRotation}deg;
-        --drift: ${randomDrift}px;
-      `;
-      
-      document.body.appendChild(ray);
-      
-      setTimeout(() => {
-        if (ray.parentNode) {
-          ray.parentNode.removeChild(ray);
-        }
-      }, 2200);
-    };
-
-    // Create floating light orb
-    const createLightOrb = () => {
-      const orb = document.createElement('div');
-      const randomX = Math.random() * window.innerWidth;
-      const randomY = Math.random() * (window.innerHeight * 0.7) + (window.innerHeight * 0.3);
-      const floatDistance = -(Math.random() * 300 + 150);
-      
-      orb.style.cssText = `
-        position: fixed;
-        width: 8px;
-        height: 8px;
-        background: radial-gradient(circle, rgba(156, 39, 176, 0.6) 0%, rgba(233, 30, 99, 0.3) 60%, transparent 100%);
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 998;
-        opacity: 0;
-        left: ${randomX}px;
-        top: ${randomY}px;
-        animation: floatOrb 4s ease-in-out forwards;
-        animation-delay: ${Math.random() * 500}ms;
-        --float-distance: ${floatDistance}px;
-      `;
-      
-      document.body.appendChild(orb);
-      
-      setTimeout(() => {
-        if (orb.parentNode) {
-          orb.parentNode.removeChild(orb);
-        }
-      }, 4500);
-    };
-
-    // Create sparkle effect
-    const createSparkle = () => {
-      const sparkle = document.createElement('div');
-      sparkle.style.cssText = `
-        position: fixed;
-        width: 3px;
-        height: 3px;
-        background: rgba(255, 255, 255, 0.9);
-        pointer-events: none;
-        z-index: 997;
-        opacity: 0;
-        left: ${Math.random() * window.innerWidth}px;
-        top: ${Math.random() * window.innerHeight}px;
-        animation: sparkleEffect 1.5s ease-in-out forwards;
-        animation-delay: ${Math.random() * 100}ms;
-      `;
-      
-      document.body.appendChild(sparkle);
-      
-      setTimeout(() => {
-        if (sparkle.parentNode) {
-          sparkle.parentNode.removeChild(sparkle);
-        }
-      }, 1600);
-    };
-
-    // Continuous ambient light effects
-    const createAmbientEffects = () => {
-      if (!effectsActive) return;
-      
-      if (Math.random() > 0.4) createLightParticle();
-      if (Math.random() > 0.6) createSparkle();
-      if (Math.random() > 0.7) createLightRay();
-      if (Math.random() > 0.8) createLightOrb();
-      
-      setTimeout(createAmbientEffects, Math.random() * 800 + 400);
-    };
-
-    // Particle stream
-    const createParticleStream = () => {
-      if (!effectsActive) return;
-      
-      for (let i = 0; i < Math.random() * 2 + 1; i++) {
-        createLightParticle();
-      }
-      
-      setTimeout(createParticleStream, 600);
-    };
-
-    // Sparkle burst
-    const createSparkleBurst = () => {
-      if (!effectsActive) return;
-      
-      for (let i = 0; i < Math.random() * 5 + 3; i++) {
-        setTimeout(() => createSparkle(), Math.random() * 500);
-      }
-      
-      setTimeout(createSparkleBurst, Math.random() * 4000 + 3000);
-    };
-
-    // Scroll effect handler
-    const handleScroll = () => {
-      const currentTime = Date.now();
-      
-      if (currentTime - lastScrollTime > 60) {
-        // Create multiple effects per scroll
-        for (let i = 0; i < Math.random() * 6 + 3; i++) {
-          createLightParticle();
-        }
-        
-        for (let i = 0; i < Math.random() * 3 + 1; i++) {
-          createLightRay();
-        }
-        
-        for (let i = 0; i < Math.random() * 4 + 2; i++) {
-          createSparkle();
-        }
-        
-        if (Math.random() > 0.7) {
-          createLightOrb();
-        }
-        
-        lastScrollTime = currentTime;
-      }
-    };
-
-    // Add keyframe animations to document
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes scatterParticle {
-        0% {
-          opacity: 0;
-          transform: translateY(0) scale(0.5) rotate(0deg);
-        }
-        20% {
-          opacity: 1;
-          transform: translateY(-20px) scale(1) rotate(90deg);
-        }
-        100% {
-          opacity: 0;
-          transform: translateY(-120px) scale(0.2) rotate(180deg);
-        }
-      }
-      
-      @keyframes lightRayScatter {
-        0% {
-          opacity: 0;
-          transform: scaleY(0) rotate(var(--rotation, 0deg)) translateX(0);
-        }
-        30% {
-          opacity: 1;
-          transform: scaleY(1) rotate(var(--rotation, 0deg)) translateX(var(--drift, 0px));
-        }
-        100% {
-          opacity: 0;
-          transform: scaleY(0.3) rotate(var(--rotation, 0deg)) translateX(var(--drift, 0px));
-        }
-      }
-      
-      @keyframes floatOrb {
-        0% {
-          opacity: 0;
-          transform: scale(0) translateY(0);
-        }
-        10% {
-          opacity: 1;
-          transform: scale(1) translateY(-10px);
-        }
-        90% {
-          opacity: 1;
-          transform: scale(1.2) translateY(var(--float-distance, -200px));
-        }
-        100% {
-          opacity: 0;
-          transform: scale(0) translateY(var(--float-distance, -200px));
-        }
-      }
-      
-      @keyframes sparkleEffect {
-        0%, 100% {
-          opacity: 0;
-          transform: scale(0) rotate(0deg);
-        }
-        50% {
-          opacity: 1;
-          transform: scale(1) rotate(180deg);
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Start effects
-    setTimeout(createAmbientEffects, 500);
-    setTimeout(createParticleStream, 1000);
-    setTimeout(createSparkleBurst, 2000);
-    
-    // Add scroll listener
-    window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      effectsActive = false;
-      window.removeEventListener('scroll', handleScroll);
-      document.head.removeChild(style);
-    };
-  }, []);
-
   return (
-    <div 
-      className="min-h-screen text-white relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(135deg, #1a0b2e 0%, #16213e 50%, #0f3460 100%)',
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-      }}
-    >
-      {/* Background Pattern */}
-      <div 
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(233, 30, 99, 0.3) 0%, transparent 50%),
-                           radial-gradient(circle at 75% 75%, rgba(156, 39, 176, 0.3) 0%, transparent 50%)`
-        }}
-      />
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-300/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+      
       <motion.div 
-        className="space-y-16 md:space-y-24 relative z-10 px-4"
+        className="relative space-y-32 p-6 md:p-10"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
         {/* Hero Section */}
         <motion.section
-          className="text-center pt-12 md:pt-20 mx-auto max-w-4xl"
+          className="relative"
           variants={itemVariants}
         >
-          <div 
-            className="p-8 md:p-12 rounded-2xl border backdrop-blur-md shadow-2xl"
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-            }}
-          >
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">
-              <span 
-                className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent"
-                style={{
-                  background: 'linear-gradient(45deg, #e91e63, #9c27b0)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}
+          <div className="w-full mx-auto py-20 lg:py-32">
+            <div className="text-center mx-auto relative">
+              {/* Floating elements */}
+              <div className="absolute -top-10 left-1/4 w-20 h-20 bg-blue-400/20 rounded-full animate-bounce animation-delay-1000"></div>
+              <div className="absolute top-20 right-1/4 w-16 h-16 bg-purple-400/20 rounded-full animate-bounce animation-delay-2000"></div>
+              
+              <motion.div 
+                className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-white/40 rounded-full px-6 py-3 mb-8 shadow-lg"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
               >
-                AI Recruitment System
-              </span>
-            </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl mb-8 text-white leading-relaxed">
-              Smarter, faster, and fairer hiring powered by advanced artificial intelligence. Automate screening, interviews, and analytics to find the best talent effortlessly.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button 
-                className="px-8 py-3 text-lg font-semibold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                style={{
-                  background: 'linear-gradient(45deg, #e91e63, #9c27b0)',
-                  boxShadow: '0 8px 25px rgba(233, 30, 99, 0.4)'
-                }}
-                onClick={() => navigate('/jobs')}
-                onMouseEnter={(e) => {
-                  e.target.style.boxShadow = '0 12px 35px rgba(233, 30, 99, 0.6)';
-                  e.target.style.transform = 'translateY(-2px) scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.boxShadow = '0 8px 25px rgba(233, 30, 99, 0.4)';
-                  e.target.style.transform = 'translateY(0) scale(1)';
-                }}
-              >
-                Explore AI Jobs
-              </button>
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                <span className="text-sm font-semibold text-slate-700">Powered by Advanced AI Technology</span>
+              </motion.div>
+              
+              <h1 className="text-6xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 mb-8 leading-tight">
+                AI-Powered
+                <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Recruitment System
+                </span>
+              </h1>
+              <p className="text-xl lg:text-2xl text-slate-600 mb-12 leading-relaxed max-w-4xl mx-auto">
+                Transform your hiring process with intelligent automation. Screen candidates, conduct interviews, and make data-driven decisions with our 
+                <span className="font-semibold text-blue-600"> advanced AI platform.</span>
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+                <motion.button 
+                  className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-lg font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                  onClick={() => navigate('/jobs')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10">Get Started Today</span>
+                  <ArrowRight className="h-6 w-6 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                </motion.button>
+                
+                <motion.button 
+                  className="px-8 py-4 bg-white/80 backdrop-blur-sm border-2 border-slate-200 text-slate-700 text-lg font-semibold rounded-2xl hover:bg-white hover:border-slate-300 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  onClick={() => alert('Contact sales coming soon!')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Contact Sales
+                </motion.button>
+              </div>
             </div>
           </div>
         </motion.section>
 
         {/* Features Section */}
         <motion.section variants={itemVariants}>
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">
-            Why Choose AI Recruiter?
-          </h2>
-          <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                className="text-center p-6 rounded-xl border backdrop-blur-md shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
-                whileHover={{ 
-                  scale: 1.07, 
-                  boxShadow: '0 20px 40px rgba(233, 30, 99, 0.3)',
-                  borderColor: 'rgba(233, 30, 99, 0.5)'
-                }}
-                variants={itemVariants}
+          <div className="w-full mx-auto">
+            <div className="text-center mb-20">
+              <motion.div 
+                className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 rounded-full px-4 py-2 mb-6 font-semibold"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
               >
-                <div 
-                  className="mx-auto p-4 rounded-full w-fit mb-4 shadow-lg"
-                  style={{
-                    background: 'linear-gradient(45deg, #e91e63, #9c27b0)',
-                    boxShadow: '0 8px 25px rgba(233, 30, 99, 0.4)'
-                  }}
-                >
-                  {feature.icon}
-                </div>
-                <div className="text-xl font-semibold mb-3 text-white">
-                  {feature.title}
-                </div>
-                <p className="text-white leading-relaxed">
-                  {feature.description}
-                </p>
+                <Star className="h-4 w-4" />
+                Why Choose Our Platform?
               </motion.div>
-            ))}
+              
+              <h2 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-8">
+                Revolutionary Features
+              </h2>
+              <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                Streamline your recruitment process with cutting-edge AI technology designed for modern hiring needs.
+              </p>
+            </div>
+            
+            <div className="grid gap-8 md:grid-cols-3">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={index}
+                  className="group relative bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-white/20 hover:bg-white/90 transition-all duration-500 text-center shadow-xl hover:shadow-2xl hover:-translate-y-2"
+                  whileHover={{ y: -5 }}
+                  variants={itemVariants}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.2 }}
+                >
+                  {/* Gradient border effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                  
+                  <div className={`bg-gradient-to-br ${feature.gradient} p-4 rounded-2xl w-fit mx-auto mb-8 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <div className="text-white">
+                      {feature.icon}
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-6">
+                    {feature.title}
+                  </h3>
+                  <p className="text-slate-600 leading-relaxed text-lg">
+                    {feature.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </motion.section>
 
         {/* How It Works Section */}
-        <motion.section variants={itemVariants} className="py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              How AI Recruitment Works
-            </h2>
-            <p className="text-white text-lg max-w-2xl mx-auto">
-              Get started in minutes with our simple, AI-powered process
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-8 justify-center max-w-6xl mx-auto">
-            {[
-              {
-                step: "01",
-                title: "Upload & AI Analyze",
-                description: "Upload your resume or job description. Our AI instantly analyzes and extracts key skills and requirements."
-              },
-              {
-                step: "02", 
-                title: "AI Quiz Assessment",
-                description: "Take an interactive, AI-generated quiz to showcase your skills and boost your application ranking."
-              },
-              {
-                step: "03",
-                title: "AI-Powered Interview",
-                description: "Participate in automated, unbiased video interviews or set up AI-driven interview flows for candidates."
-              },
-              {
-                step: "04",
-                title: "Get AI Insights",
-                description: "Receive detailed analytics, match scores, and recommendations powered by advanced AI algorithms."
-              }
-            ].map((step, index) => (
-              <motion.div
-                key={index}
-                className="text-center p-8 rounded-xl backdrop-blur-md relative w-full sm:w-[320px]"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
-                whileHover={{ scale: 1.02, borderColor: 'rgba(233, 30, 99, 0.5)' }}
+        <motion.section variants={itemVariants}>
+          <div className="w-full mx-auto">
+            <div className="text-center mb-20">
+              <motion.div 
+                className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 rounded-full px-4 py-2 mb-6 font-semibold"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
               >
-                <div 
-                  className="text-6xl mb-4"
-                >
-                  {step.icon}
-                </div>
-                <div 
-                  className="text-sm font-bold mb-2 px-3 py-1 rounded-full inline-block"
-                  style={{
-                    background: 'linear-gradient(45deg, #e91e63, #9c27b0)',
-                    color: 'white'
-                  }}
-                >
-                  STEP {step.step}
-                </div>
-                <h3 className="text-xl font-semibold mb-3 text-white">
-                  {step.title}
-                </h3>
-                <p className="text-white leading-relaxed">
-                  {step.description}
-                </p>
+                <Rocket className="h-4 w-4" />
+                Simple Process
               </motion.div>
-            ))}
+              
+              <h2 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-8">
+                How It Works
+              </h2>
+              <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                Get started in minutes with our simple, AI-powered recruitment process
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[
+                {
+                  step: "01",
+                  icon: <FileText className="h-8 w-8" />,
+                  title: "Upload & Analyze",
+                  description: "Upload resumes or job descriptions. Our AI instantly analyzes and extracts key skills and requirements.",
+                  color: "blue"
+                },
+                {
+                  step: "02", 
+                  icon: <Target className="h-8 w-8" />,
+                  title: "Skills Assessment",
+                  description: "Candidates take AI-generated quizzes to showcase their skills and boost their application ranking.",
+                  color: "purple"
+                },
+                {
+                  step: "03",
+                  icon: <Bot className="h-8 w-8" />,
+                  title: "AI Interview",
+                  description: "Conduct automated, unbiased video interviews with real-time analysis and scoring.",
+                  color: "emerald"
+                },
+                {
+                  step: "04",
+                  icon: <BarChart2 className="h-8 w-8" />,
+                  title: "Get Insights",
+                  description: "Receive detailed analytics, match scores, and recommendations for informed hiring decisions.",
+                  color: "orange"
+                }
+              ].map((step, index) => (
+                <motion.div
+                  key={index}
+                  className="group relative bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-white/20 text-center hover:bg-white/90 transition-all duration-500 shadow-xl hover:shadow-2xl hover:-translate-y-2"
+                  whileHover={{ y: -5 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className={`bg-gradient-to-br from-${step.color}-500 to-${step.color}-600 p-4 rounded-2xl w-fit mx-auto mb-6 shadow-lg text-white group-hover:scale-110 transition-transform duration-300`}>
+                    {step.icon}
+                  </div>
+                  <div className={`bg-gradient-to-r from-${step.color}-600 to-${step.color}-700 text-white text-sm font-bold px-4 py-2 rounded-full inline-block mb-6 shadow-lg`}>
+                    STEP {step.step}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-4">
+                    {step.title}
+                  </h3>
+                  <p className="text-slate-600 leading-relaxed">
+                    {step.description}
+                  </p>
+                  
+                  {/* Modern connection line */}
+                  {index < 3 && (
+                    <div className="hidden lg:block absolute top-12 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-300 to-purple-300 opacity-60"></div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
           </div>
         </motion.section>
-
-        {/* Testimonials Section */}
-        <motion.section variants={itemVariants} className="py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              What Our Users Say
-            </h2>
-            <p className="text-white text-lg max-w-2xl mx-auto">
-              Real stories from companies and candidates who found success with our platform
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {[
-              {
-                quote: "This platform reduced our hiring time by 70% while finding better candidates. The AI screening is incredibly accurate.",
-                author: "Sarah Chen",
-                role: "HR Director",
-                company: "TechCorp Inc."
-              },
-              {
-                quote: "As a developer, I loved the fair, unbiased interview process. Got hired within 2 weeks of applying!",
-                author: "Marcus Rodriguez", 
-                role: "Software Engineer",
-                company: "StartupXYZ"
-              },
-              {
-                quote: "The analytics and candidate reports are game-changing. We make data-driven hiring decisions now.",
-                author: "Jennifer Kim",
-                role: "Talent Acquisition Lead", 
-                company: "Global Solutions"
-              },
-              {
-                quote: "Finally, a platform that understands both technical skills and cultural fit. Highly recommended!",
-                author: "David Thompson",
-                role: "CTO",
-                company: "InnovateNow"
-              }
-            ].map((testimonial, index) => (
-              <motion.div
-                key={index}
-                className="p-8 rounded-xl backdrop-blur-md"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
-                whileHover={{ scale: 1.02, borderColor: 'rgba(233, 30, 99, 0.3)' }}
+        
+        {/* CTA Section */}
+        <motion.section variants={itemVariants}>
+          <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-12 lg:p-20 text-center overflow-hidden shadow-2xl">
+            {/* Background pattern */}
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-3xl"></div>
+            
+            {/* Floating elements */}
+            <div className="absolute top-10 left-10 w-16 h-16 bg-white/20 rounded-full animate-bounce animation-delay-1000"></div>
+            <div className="absolute bottom-10 right-10 w-20 h-20 bg-white/20 rounded-full animate-bounce animation-delay-3000"></div>
+            
+            <div className="relative z-10">
+              <motion.div 
+                className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-2 mb-8 font-semibold"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
               >
-                <div className="text-4xl mb-4 opacity-50">"</div>
-                <p className="text-white mb-6 leading-relaxed italic">
-                  {testimonial.quote}
-                </p>
-                <div className="flex items-center">
-                  <div 
-                    className="w-12 h-12 rounded-full flex items-center justify-center mr-4 text-white font-bold"
-                    style={{
-                      background: 'linear-gradient(45deg, #e91e63, #9c27b0)'
-                    }}
-                  >
-                    {testimonial.author.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <div className="text-white font-semibold">{testimonial.author}</div>
-                    <div className="text-pink-100 text-sm">{testimonial.role}</div>
-                    <div className="text-pink-100 text-xs">{testimonial.company}</div>
-                  </div>
-                </div>
+                <Zap className="h-4 w-4" />
+                Ready to Get Started?
               </motion.div>
-            ))}
+              
+              <h2 className="text-5xl lg:text-6xl font-bold text-white mb-8 leading-tight">
+                Transform Your Hiring
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">
+                  Process Today
+                </span>
+              </h2>
+              <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto leading-relaxed">
+                Join hundreds of companies using AI to find the best talent faster and more efficiently than ever before.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <motion.button 
+                  className="px-8 py-4 bg-white text-blue-600 text-lg font-bold rounded-2xl hover:bg-gray-50 transition-all duration-300 flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl hover:scale-105"
+                  onClick={() => navigate('/jobs')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Get Started Today
+                  <ArrowRight className="h-6 w-6" />
+                </motion.button>
+                <motion.button 
+                  className="px-8 py-4 border-2 border-white text-white text-lg font-bold rounded-2xl hover:bg-white hover:text-blue-600 transition-all duration-300 backdrop-blur-sm shadow-xl hover:shadow-2xl"
+                  onClick={() => alert('Contact sales coming soon!')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Contact Sales
+                </motion.button>
+              </div>
+            </div>
           </div>
         </motion.section>
-
 
         {/* Newsletter Section */}
-        <motion.section variants={itemVariants} className="py-16">
-          <div 
-            className="text-center p-8 md:p-12 rounded-2xl backdrop-blur-md max-w-4xl mx-auto"
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Stay Updated
-            </h2>
-            <p className="text-white text-lg mb-8 max-w-2xl mx-auto">
-              Get the latest hiring insights, AI updates, and exclusive features delivered to your inbox
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-lg border text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-              />
-              <button 
-                className="px-6 py-3 font-semibold text-white rounded-lg transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'linear-gradient(45deg, #e91e63, #9c27b0)',
-                  boxShadow: '0 4px 15px rgba(233, 30, 99, 0.3)'
-                }}
-                onClick={() => alert('Subscribed to newsletter!')}
-              >
-                Subscribe
-              </button>
-            </div>
+        <motion.section variants={itemVariants}>
+          <div className="w-full mx-auto">
+            <motion.div 
+              className="bg-white/80 backdrop-blur-xl p-8 lg:p-16 rounded-3xl border border-white/20 text-center shadow-xl"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="max-w-2xl mx-auto">
+                <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-6">
+                  Stay Updated
+                </h2>
+                <p className="text-lg text-slate-600 mb-10 leading-relaxed">
+                  Get the latest hiring insights, AI updates, and exclusive features delivered to your inbox
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="email"
+                    placeholder="Enter your email address"
+                    className="flex-1 px-6 py-4 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white/60 backdrop-blur-sm text-lg placeholder:text-slate-400"
+                  />
+                  <motion.button 
+                    className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 whitespace-nowrap shadow-lg hover:shadow-xl"
+                    onClick={() => alert('Subscribed to newsletter!')}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Subscribe Now
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </motion.section>
-
-        {/* Footer */}
-        <motion.footer variants={itemVariants} className="py-16 mt-8">
-          <div 
-            className="backdrop-blur-md border-t max-w-6xl mx-auto"
-            style={{
-              background: 'rgba(255, 255, 255, 0.03)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            <div className="p-8 text-center">
-              {/* Company Info */}
-              <div className="mb-6">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{
-                      background: 'linear-gradient(45deg, #e91e63, #9c27b0)'
-                    }}
-                  >
-                    <span className="text-white font-bold">AI</span>
-                  </div>
-                  <span className="text-xl font-bold text-white">HireFlow</span>
-                </div>
-                <p className="text-white mb-4 max-w-md mx-auto">
-                  Revolutionizing recruitment with AI-powered screening, automated interviews, and intelligent candidate matching.
-                </p>
-                <div className="flex justify-center gap-4">
-                  {['Twitter', 'LinkedIn', 'GitHub', 'Discord'].map((social, index) => (
-                    <button
-                      key={index}
-                      className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)'
-                      }}
-                      onClick={() => alert(`Opening ${social}...`)}
-                    >
-                      <span className="text-white text-sm">{social[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Footer Bottom */}
-              <div 
-                className="pt-6 border-t"
-                style={{
-                  borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
-              >
-                <div className="text-pink-100 text-sm">
-                  © 2024 HireFlow. All rights reserved.
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.footer>
       </motion.div>
+      
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-3000 {
+          animation-delay: 3s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 };
