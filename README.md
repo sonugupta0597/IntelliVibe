@@ -1,7 +1,7 @@
 "# IntelliVibe" 
 "# IntelliVibe" 
 "# IntelliVibe" 
-
+http://localhost:5173/candidate/interview/687b973cce8565328e0f6aed
 
 1. the candidate should have the right to widraw from job application that he/she applied for
 2. Routes are not protected for employee login

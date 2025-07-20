@@ -355,7 +355,7 @@ exports.sendApplicationEmail = async (application, template, additionalData = {}
 
         const templateFunction = emailTemplates[template];
         if (!templateFunction) {
-            console.error(`Email template '${template}' not found`);
+            console.error(`Email template '${template}' not found emailService.js`);
             return;
         }
 

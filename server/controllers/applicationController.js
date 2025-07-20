@@ -114,7 +114,8 @@ exports.applyForJob = async (req, res) => {
                 quiz = new Quiz({
                     job: jobId,
                     questions: questions,
-                    passingScore: 70, // Example passing score
+                    // passingScore: 70, // Example passing score
+                    passingScore: 0, // Example passing score
                     timeLimit: 30 // 30 minutes
                 });
                 await quiz.save();
@@ -432,8 +433,16 @@ exports.updateApplicationStatus = async (req, res) => {
         const { applicationId } = req.params;
         const { status } = req.body;
 
-        // Validate status
-        const validStatuses = ['pending', 'reviewed', 'shortlisted', 'rejected'];
+        // Validate status - UPDATED to include all statuses used in frontend
+        const validStatuses = [
+            'pending', 
+            'reviewed', 
+            'shortlisted', 
+            'rejected',
+            'AI Interview Passed',
+            'AI Interview Failed'
+        ];
+        
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ message: 'Invalid status' });
         }

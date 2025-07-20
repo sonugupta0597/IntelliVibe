@@ -43,7 +43,11 @@ const generateInitialQuestion = async (jobDetails, resumeText) => {
     const response = result.response;
     return response.text();
   } catch (error) {
-    console.error("Error generating initial question:", error);
+    console.error("CRITICAL: Error generating initial question with Gemini.", {
+        errorMessage: error.message,
+        errorDetails: error.details,
+        errorStack: error.stack,
+    });
     return "Thank you for joining. Let's start with this: can you tell me about a project you're particularly proud of?";
   }
 };
@@ -57,7 +61,16 @@ const generateInitialQuestion = async (jobDetails, resumeText) => {
  * @returns {Promise<string>} A single, relevant follow-up question.
  */
 const generateFollowUpQuestion = async (transcriptHistory, jobDetails) => {
-    const conversation = transcriptHistory.map(turn => `${turn.speaker}: ${turn.text}`).join('\n');
+    let conversation;
+    // Defensive check: If we receive a plain string, treat it as the candidate's last answer.
+    if (Array.isArray(transcriptHistory)) {
+        conversation = transcriptHistory.map(turn => `${turn.speaker}: ${turn.text}`).join('\n');
+    } else if (typeof transcriptHistory === 'string') {
+        conversation = `Candidate: ${transcriptHistory}`;
+    } else {
+        // Fallback if the input is invalid
+        conversation = "The candidate has just finished speaking.";
+    }
 
     const prompt = `
         You are an expert AI technical interviewer continuing a conversation.
@@ -87,12 +100,45 @@ const generateFollowUpQuestion = async (transcriptHistory, jobDetails) => {
     }
 };
 
-module.exports = {
-  generateInitialQuestion,
-  generateFollowUpQuestion, // <-- Export the new function
+const analyzeInterviewTranscript = async (transcript, jobDetails) => {
+    const prompt = `
+        You are an expert AI recruitment analyst. Your task is to evaluate a candidate's video interview transcript for a "${jobDetails.title}" position.
+
+        The required skills for this job are: ${jobDetails.skills.join(', ')}.
+
+        --- INTERVIEW TRANSCRIPT ---
+        ${transcript}
+        --- END TRANSCRIPT ---
+
+        Please provide a structured JSON response with the following fields:
+        1.  "score": An integer between 0 and 100, representing how well the candidate's answers align with the job requirements. A score above 75 indicates a strong candidate.
+        2.  "summary": A brief, neutral summary of the interview, highlighting the key points discussed.
+        3.  "status": A string, either "AI Interview Passed" or "AI Interview Failed", based on the score.
+
+        Your response must be only the JSON object, without any preamble.
+    `;
+
+    try {
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text().trim();
+        // Extract the JSON part from the response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error("Invalid JSON response from AI.");
+    } catch (error) {
+        console.error("Error analyzing interview transcript:", error);
+        return {
+            score: 0,
+            summary: "Could not analyze the interview transcript.",
+            status: "AI Interview Failed",
+        };
+    }
 };
 
 module.exports = {
   generateInitialQuestion,
   generateFollowUpQuestion,
+  analyzeInterviewTranscript,
 };
